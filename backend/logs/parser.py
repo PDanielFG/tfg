@@ -17,7 +17,7 @@ LOG_PATTERN = re.compile(
     r'(?P<date>\d{6})\s+(?P<time>\d{2}:\d{2}:\d{2})\s+(?P<thread_id>\d+)\s+(?P<command_type>\w+)\s*(?P<argument>.*)'
 )
 
-
+#Hay que pulir detalles del parser, que parsee solo las consultas que hace el alumno, pero funciona bien
 def parse_mysql_log(filepath):
     parsed_lines = 0
 

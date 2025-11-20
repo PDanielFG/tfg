@@ -1,0 +1,100 @@
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+251110 23:22:35	     8 Connect	root@localhost as anonymous on 
+		     8 Query	set autocommit=1
+		     8 Query	SELECT current_user()
+		     8 Query	SET CHARACTER SET utf8
+		     8 Query	SET NAMES utf8
+		     8 Query	SET SQL_SAFE_UPDATES=1
+		     8 Query	SELECT CONNECTION_ID()
+		     8 Query	show character set where charset = 'utf8mb4'
+		     8 Query	SET NAMES 'utf8mb4'
+		     8 Query	SHOW SESSION STATUS LIKE 'Ssl_cipher'
+		     8 Query	USE `practica`
+		     8 Query	set autocommit=1
+		     8 Query	SHOW VARIABLES LIKE 'general_log'
+		     8 Query	SHOW VARIABLES LIKE 'general_log_file'
+		     8 Query	SHOW VARIABLES LIKE 'log_output'
+251110 23:22:45	     8 Query	SHOW VARIABLES LIKE 'general_log'
+		     8 Query	SHOW VARIABLES LIKE 'general_log_file'
+		     8 Query	SHOW VARIABLES LIKE 'log_output'
+251110 23:23:09	     8 Query	select 1
+LIMIT 0, 1000
+251110 23:24:05	     9 Connect	root@localhost as anonymous on 
+		     9 Query	set autocommit=1
+		     9 Query	SELECT current_user()
+		     9 Query	SET CHARACTER SET utf8
+		     9 Query	SET NAMES utf8
+		     9 Query	SHOW SESSION VARIABLES LIKE 'sql_mode'
+		     9 Query	SELECT CONNECTION_ID()
+		     9 Query	show character set where charset = 'utf8mb4'
+		     9 Query	SET NAMES 'utf8mb4'
+		     9 Query	SHOW SESSION STATUS LIKE 'Ssl_cipher'
+		     9 Query	USE `practica`
+		     9 Query	set autocommit=1
+		     9 Query	SHOW FULL COLUMNS FROM `practica`.`articulos`
+		     9 Query	SHOW INDEXES FROM `practica`.`articulos`
+251110 23:24:15	     8 Query	select * from articulos
+LIMIT 0, 1000
+		     9 Query	SHOW INDEX FROM `practica`.`articulos`
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
