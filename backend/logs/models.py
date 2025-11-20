@@ -6,6 +6,7 @@ from django.db import models
 
 #Guarda cada linea del log, ya procesado por el parser
 from django.db import models
+
 class MysqlLogLine(models.Model):
     timestamp = models.DateTimeField(db_index=True, null=True, blank=True)
     thread_id = models.IntegerField(null=True, blank=True, db_index=True)
