@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.core.files.storage import default_storage
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.db import connection
+
 
 from .models import MysqlLogLine
 from rest_framework import viewsets, permissions
@@ -47,4 +49,19 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(
             {"status": "ok", "filename": file.name, "parsed_lines": parsed},
             status=status.HTTP_200_OK,
+        )
+    
+    @action(detail=False, methods=['delete'], url_path='delete_all')
+    def delete_all(self, request):
+        count, _ = MysqlLogLine.objects.all().delete()  # pylint: disable=no-member
+
+
+        table_name=MysqlLogLine._meta.db_table  # pylint: disable=no-member
+        with connection.cursor() as cursor:
+            #Django usa sqlite, no usa mysql, CUIDADO
+            cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table_name}';")
+
+        return Response(
+            {"status": "deleted", "deleted_records": count},
+            status=status.HTTP_204_NO_CONTENT
         )
