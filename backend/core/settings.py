@@ -41,6 +41,20 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'corsheaders.middleware.CorsMiddleware',
+]
+
+#Permitimos la conexión
+CORS_ORIGIN_WHITELIST = [
+    'http://localhsot:8000',
+    'http://127.0.0.1:8000',
+
+    'http://localhost:8080',    #vue. A través de vue accederemos a la app de vue
+    'http://127.0.0.1:8080',
+
+    'http://localhost:3000',    #react
+    'http://127.0.0.1:3000',
 ]
 
 ROOT_URLCONF = 'core.urls'
