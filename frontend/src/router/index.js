@@ -9,13 +9,13 @@ const routes = [
     component: UploadFile   //Podemos poner tanto una view como un component
   },
   {
-    path: '/about',
-    name: 'about',
+    path: '/usersList',
+    name: 'UserList',
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: function () {
-      return import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
+      return import(/* webpackChunkName: "about" */ '../views/UserList.vue')
     }
   }
 ]

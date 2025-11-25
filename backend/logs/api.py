@@ -10,6 +10,7 @@ from .models import MysqlLogLine
 from rest_framework import viewsets, permissions
 from .serializers import LogSerializer
 from .parser import parse_mysql_log     #Poner . para referirnos al archivo
+from django.db.models import Max
 
 class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
     
@@ -67,3 +68,27 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
             {"status": "deleted", "deleted_records": count},
             status=status.HTTP_204_NO_CONTENT
         )
+    
+    @action(detail=False, methods=['get'], url_path='connected-users')
+    def connected_users(self, request):
+        """
+        Devuelve los usuarios únicos que se han conectado, con la última conexión.
+        """
+        users = (
+            MysqlLogLine.objects  # pylint: disable=no-member
+            .filter(command_type='Connect', user_host__isnull=False)
+            .values('user_host')    #Selecciona solo la columna de la bd user_host root@localhost o ana@localhost
+            .annotate(last_connected=Max('timestamp'))  #campo extra calculado, con la ultima fecha de conexion
+            .order_by('user_host')  #ordena en funcion del noombre
+        )
+
+        #Para extraer solo el usuario, en vez de usuario@host
+        result = [
+            {
+                'user': u['user_host'].split('@')[0],  # solo la parte antes de @
+                'last_connected': u['last_connected']
+            }
+            for u in users
+        ]
+
+        return Response(result)

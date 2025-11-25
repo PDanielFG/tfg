@@ -1,7 +1,7 @@
 <template>
   <nav>
     <router-link to="/">Projectos</router-link>
-    <router-link to="/crear">Crear</router-link>
+    <router-link to="/usersList">Usuarios</router-link>
   </nav>
   <router-view />
 
