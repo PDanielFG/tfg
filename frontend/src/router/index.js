@@ -1,11 +1,12 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import UploadFile from '@/components/UploadFile.vue'
 
 const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: UploadFile   //Podemos poner tanto una view como un component
   },
   {
     path: '/about',
