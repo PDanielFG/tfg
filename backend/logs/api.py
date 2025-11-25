@@ -12,6 +12,8 @@ from .serializers import LogSerializer
 from .parser import parse_mysql_log     #Poner . para referirnos al archivo
 
 class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
+    
+    #Est se muestra al visitar la url de la API
     """
     ViewSet que permite:
     - Listar logs ya parseados (GET /api/logs/)

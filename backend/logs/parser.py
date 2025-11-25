@@ -33,7 +33,7 @@ def parse_mysql_log(filepath):
                 continue
 
             #Si la linea no sigue el formato definido en el regex LOG_PATTERN la descarta
-            match = LOG_PATTERN.match(line)     #???
+            match = LOG_PATTERN.match(line)     
             if not match:
                 continue
 
