@@ -46,6 +46,19 @@ def parse_mysql_log(filepath):
 
             timestamp = datetime(year, month, day, hour, minute, second)
 
+            argument= match.group("argument").strip()
+            user_host = None
+            query = ''
+
+            # Extraer user@host si es Connect
+            if match.group('command_type') == "Connect":
+                m = re.search(r'(?P<user_host>[\w\-]+@[\w\.\-]+)', argument)
+                if m:
+                    user_host = m.group("user_host")
+
+            # Extraer query si es Query
+            if match.group('command_type') == "Query":
+                query = argument
 
 
             #Crea el registro en la base de datos.
@@ -54,7 +67,8 @@ def parse_mysql_log(filepath):
                 timestamp=timestamp,
                 thread_id=int(match.group('thread_id')),
                 command_type=match.group('command_type'),
-                query=match.group('argument').strip() if match.group('command_type') == "Query" else '',
+                user_host=user_host,
+                query=query,
                 raw=line,
             )
 
