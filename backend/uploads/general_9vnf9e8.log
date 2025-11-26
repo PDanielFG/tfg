@@ -1,0 +1,11 @@
+C:\xampp\mysql\bin\mysqld.exe, Version: 10.4.28-MariaDB-log (mariadb.org binary distribution). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+251126 22:54:30	     8 Connect	root@localhost as anonymous on 
+		     8 Query	select @@version_comment limit 1
+251126 22:54:33	     8 Query	SELECT DATABASE()
+		     8 Init DB	practica
+251126 22:54:36	     8 Query	show tables
+251126 22:54:42	     8 Query	select * from articulos
+251126 22:54:54	     8 Query	seect * from articulos
+251126 22:54:57	     8 Quit	

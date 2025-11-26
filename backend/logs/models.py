@@ -21,6 +21,8 @@ class MysqlLogLine(models.Model):
     is_complex = models.BooleanField(default=False)
 
     was_error = models.BooleanField(default=False)
+    error_message = models.TextField(null=True, blank=True)
+
     raw = models.TextField()
     parsed_at = models.DateTimeField(auto_now_add=True)
 
