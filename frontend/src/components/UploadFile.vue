@@ -50,6 +50,11 @@
         Subir archivo
       </button>
 
+      <!-- Delete logs button -->
+      <div class="mt-4">
+        <DeleteAllLogsButton @deleted="onLogsDeleted" />
+      </div>
+
       <!-- Response -->
       <div
         v-if="response"
@@ -69,6 +74,7 @@
 <script setup>
 import { ref } from "vue";
 import axios from "axios";
+import DeleteAllLogsButton from "@/components/DeleteButton.vue";
 
 const selectedFile = ref(null);
 const response = ref(null);
@@ -93,6 +99,12 @@ const uploadFile = async () => {
     console.error(error);
     response.value = error.response?.data || "Error al subir archivo";
   }
+};
+
+// Evento que dispara cuando se eliminan los logs
+const onLogsDeleted = () => {
+  console.log("Todos los logs fueron eliminados");
+  response.value = "Todos los logs fueron eliminados correctamente";
 };
 </script>
 
