@@ -59,10 +59,14 @@ export default {
       }
     },
     formatDate(dateStr) {
-      if (!dateStr) return '-';
-      const d = new Date(dateStr);
-      return d.toLocaleString();
-    }
+    if (!dateStr) return '-';
+    return new Intl.DateTimeFormat('es-ES', {
+      dateStyle: 'short',
+      timeStyle: 'medium',
+      timeZone: 'UTC'   // Evita la conversión automática
+    }).format(new Date(dateStr));
+  }
+
   }
 }
 </script>
