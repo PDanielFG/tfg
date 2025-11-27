@@ -2,6 +2,7 @@
   <nav>
     <router-link to="/">Projectos</router-link>
     <router-link to="/usersList">Usuarios</router-link>
+    <router-link to="/queryList">Querys</router-link>
   </nav>
   <router-view />
 

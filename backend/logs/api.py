@@ -92,3 +92,12 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         ]
 
         return Response(result)
+    
+    @action(detail=False, methods=['get'], url_path='queryList')
+    def query_list(self, request):
+        """
+        Devuelve todos los logs en formato JSON.
+        """
+        logs = self.get_queryset()  # MysqlLogLine.objects.all()
+        serializer = self.get_serializer(logs, many=True)
+        return Response(serializer.data)
