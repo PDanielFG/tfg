@@ -4,16 +4,24 @@ from datetime import datetime
 from logs.models import MysqlLogLine    
 
 import sqlparse
+from sqlparse.sql import Identifier, IdentifierList
+from sqlparse.tokens import Keyword, DML
+from django.db import connection
+from django.db import connections
+
+
+
+EXISTING_TABLES = None
+TABLE_COLUMNS = None
+
+
 
 #Lee cada linea del txt, y extrae la info util
 #El parser es el que mira la caja de papeles arrugados, los lee, ordena y extrae lo importante
 #El modelo es la estanteria donde se guardan luego en nuestra bd
 
-
-
 #regex->define el formato de las líneas utiles.
 #Tiene los campos que extraeremos: date, time, thread_id, command_type, argument
-
 LOG_PATTERN = re.compile(
     r'(?P<year>\d{2})(?P<month>\d{1,2})(?P<day>\d{1,2})\s+'
     r'(?P<time>\d{1,2}:\d{1,2}:\d{1,2})\s+'
@@ -22,10 +30,172 @@ LOG_PATTERN = re.compile(
     r'(?P<argument>.*)'
 )
 
+#Diccionario de sintaxis de sql
 SQL_KEYWORDS = (
     "select", "insert", "update", "delete", "create", "drop", "alter",
     "from", "where", "join", "on", "group", "order", "limit", "use", "show", "describe"
 )
+
+
+#Devuelve TODAS las tablas de la bd
+def get_existing_tables():
+    with connections['mysql_logs'].cursor() as cursor:  #Me conecto a la bd de practicas, con las credenciales en settings.py. Cursor es lo que ejecuta las consultas
+        cursor.execute("SHOW TABLES;")  #Ejecuta al consulta
+        return {row[0].lower() for row in cursor.fetchall()}    #Devuelve el indice 0 de la tupla anterior (nombre de tablas), lo pasa a minusculas (para comparar),y lo devuelve todo
+
+
+#Devuelve las columnas de cada tabla. TODAS
+def get_table_columns():
+    table_columns = {}  #diccionario vacío  
+    tables = get_existing_tables()  #Obtengo las tablas existentes, con la funcion anterior
+
+    with connections['mysql_logs'].cursor() as cursor:
+        for table in tables:
+            cursor.execute(f"SHOW COLUMNS FROM `{table}`;") #Recorre cada tabla, para obtener las columnas de cada una de ellas
+            cols = {row[0].lower() for row in cursor.fetchall()}  # row[0] es nombre de columna, el primer elemento, como arriba
+            table_columns[table] = cols #a cada tabla (articulos) = se le asigna un set {id, .....}
+    return table_columns   
+
+#Obtener las tablas referenciadas de una query. IMPORTANTE
+def extract_tables(sql):
+    """Extrae nombres de tablas de FROM y JOIN, ignorando alias y columnas."""
+    tables = []
+                                    #[<DML 'SELECT'>, <Whitespace ' '>, <Identifier 'art_nom'>, <Whitespace ' '>, <Keyword 'FROM'>, <Whitespace ' '>, <Identifier 'articulos'>]
+    parsed = sqlparse.parse(sql)    #[<Statement 'SELECT art_nom FROM articulos' at 0x...>], si hubiera mas consultas separadas por ; pondria mas posiciones
+    
+    if not parsed:  #
+        return tables
+
+
+    stmt = parsed[0]    #Cogemos la primera palabra
+    tokens = list(stmt.tokens)  #Lo pasamos a lista
+
+    #Recorre todos los tokens, i indice del token, token es el token actual
+    for i, token in enumerate(tokens):
+        # Buscar FROM o JOIN
+        if token.ttype is Keyword and token.value.upper() in ("FROM", "JOIN"):
+            # El siguiente token suele ser un Identifier o IdentifierList
+            next_token = stmt.token_next(i)[1]
+            if isinstance(next_token, IdentifierList):
+                for identifier in next_token.get_identifiers():
+                    real = identifier.get_real_name()
+                    if real:
+                        tables.append(real.lower())
+            elif isinstance(next_token, Identifier):
+                tables.append(next_token.get_real_name().lower())
+
+    return tables
+
+
+#Verifica si un objeto identifier, identifica una tabla en la bd o no
+def identifier_is_table(identifier):
+    """True si la estructura encaja con tabla [AS alias]"""
+    return (
+        isinstance(identifier, sqlparse.sql.Identifier) and
+        identifier.get_real_name() is not None
+    )
+
+#Columnas mencionadas de una determinada query
+def extract_columns(sql):
+    parsed = sqlparse.parse(sql)
+    if not parsed:
+        return []
+
+    stmt = parsed[0]
+    collecting = False  #Estamos antes del select o no
+    columns = []    
+    buffer = ""
+
+    for token in stmt.tokens:
+        if token.ttype is DML and token.value.upper() == "SELECT":  #parte del select
+            collecting = True
+            continue
+
+        if token.ttype is Keyword and token.value.upper() == "FROM":    #Fin de columna
+            if buffer.strip():
+                columns.append(buffer.strip().lower())  
+            break
+
+        if not collecting:
+            continue
+
+        if token.ttype == sqlparse.tokens.Punctuation and token.value == ',':   #Separamos columnas por ,
+            if buffer.strip():
+                columns.append(buffer.strip().lower())
+                buffer = ""
+            continue
+
+        # Ignorar asterisco o funciones como database()
+        if token.value.strip() == '*' or '(' in token.value:
+            buffer = ""
+            continue
+
+        if not token.is_whitespace:
+            buffer += token.value
+
+    if buffer.strip():
+        columns.append(buffer.strip().lower())
+
+    return columns  #Devuelve las columnas en minusculas de la consulta
+
+
+#las columnas de mi query existen en la tabla mencionada
+def validate_columns(query, tables_in_query, table_columns):
+    """
+    Valida columnas, soporta alias, tabla.col y funciones.
+    """ 
+    columns_in_query = extract_columns(query)   #Columnas de la query
+
+    # Crear mapa alias → tabla
+    #Recorre los tokens, por cada identifier que tenga alias crea un diccionario
+    alias_map = {}
+    parsed = sqlparse.parse(query)[0]
+    for token in parsed.tokens:
+        if isinstance(token, Identifier):
+            table = token.get_real_name()
+            alias = token.get_alias()
+
+            if table and alias:
+                alias_map[alias.lower()] = table.lower()
+
+    #Por cada columna separa alias, y lo resuelve, comprueba si la tabla existe, y si contiene esa columna
+    for col in columns_in_query:
+
+        # Caso tabla.col → separar
+        if '.' in col:
+            table_alias, col_name = col.split('.', 1)
+
+            # Resolver alias si es necesario
+            table_real = alias_map.get(table_alias, table_alias)
+
+            if table_real not in table_columns:
+                return False, f"Table '{table_real}' does not exist"
+
+            if col_name not in table_columns[table_real]:
+                return False, f"Column '{col_name}' does not exist in table '{table_real}'"
+
+            continue
+
+
+        # Columna simple: buscar en todas las tablas, sin prefijo
+        found = False
+        for table in tables_in_query:
+            if col in table_columns.get(table, set()):
+                found = True
+                break
+
+        #si no lo encuentra, comprueba columnas mediante alias
+        if not found:
+            # Buscar en alias (u.col)
+            for alias, real_table in alias_map.items():
+                if col in table_columns.get(real_table, set()):
+                    found = True
+                    break
+        #si no encuentra nada, devuelve error
+        if not found:
+            return False, f"Column '{col}' does not exist in any referenced table"
+
+    return True, None   #none es el mensaje de error
 
 
 def is_valid_sql(query: str):
@@ -33,6 +203,16 @@ def is_valid_sql(query: str):
     Valida SQL de forma permisiva pero detectando errores comunes.
     Devuelve (is_valid: bool, error_message: str|None)
     """
+    #Variables globales para evitar consultas repetidas, gracias a la caché
+    #Asi cada vez que subamos el .log, no habra una nueva conexion para verificar la existencia de tablas o columnas, 
+    #sino que por muchas veces que subamos el .log solo habra una conexión extra (la que comprueba)
+    #Asi tampoco crea logs nuevos innecesarios, con esas nuevas conexiones para comprobar
+    global EXISTING_TABLES, TABLE_COLUMNS
+    if EXISTING_TABLES is None:
+        EXISTING_TABLES = get_existing_tables()
+    if TABLE_COLUMNS is None:
+        TABLE_COLUMNS = get_table_columns()
+
     original = query
     query = query.strip().lower()
 
@@ -61,6 +241,16 @@ def is_valid_sql(query: str):
         # EXTRA: detectar "form" en vez de "from"
         if re.search(r"\bform\b", query):
             return False, "Typo detected: 'form' instead of 'from'"
+        
+        # tables_in_query = extract_tables(query)
+        # columns_in_query = extract_columns(query)
+
+        # # --- DEBUG: mostrar tablas y columnas detectadas ---
+        # print("DEBUG: query:", query)
+        # print("DEBUG: tablas encontradas en la query:", tables_in_query)
+        # print("DEBUG: columnas encontradas en la query:", columns_in_query)
+        # for table in tables_in_query:
+        #     print(f"DEBUG: columnas de la tabla {table}:", TABLE_COLUMNS.get(table))
 
         # Comprobación de FROM
         if "from" not in query:
@@ -73,6 +263,21 @@ def is_valid_sql(query: str):
         for w in words:
             if w not in SQL_KEYWORDS and not re.match(r"[a-z_][a-z0-9_]*", w):
                 return False, f"Unknown token '{w}'"
+            
+        #validar tablas inexistentes
+        tables_in_query = extract_tables(query)
+        for table in tables_in_query:
+            # print("DEBUG: tablas extraídas:", tables_in_query)  # <--- línea de debug
+            if table not in EXISTING_TABLES:
+                return False, f"Table '{table}' does not exist"
+
+            
+        #validar columnas inexistentes
+        is_valid_cols, error_cols = validate_columns(query, tables_in_query, TABLE_COLUMNS)
+        if not is_valid_cols:
+            return False, error_cols
+
+
 
         return True, None
 
@@ -132,6 +337,9 @@ def parse_mysql_log(filepath):
                 query=argument
                 is_valid, error_message=is_valid_sql(query)
                 was_error=not is_valid
+
+            
+            # print(f"DEBUG: '{query}' | tablas extraídas: {extract_tables(query)} | was_error={was_error} | error_message={error_message}")
 
 
             #Crea el registro en la base de datos.

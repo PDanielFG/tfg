@@ -1,0 +1,64 @@
+C:\Program Files\MariaDB 10.6\bin\mysqld.exe, Version: 10.6.24-MariaDB-log (MariaDB Server). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+251201  2:02:41	     3 Connect	root@localhost on  using TCP/IP
+		     3 Query	select @@version_comment limit 1
+251201  2:02:44	     3 Query	SELECT DATABASE()
+		     3 Init DB	practica
+251201  2:02:56	     3 Query	select * from arculos
+251201  2:03:04	     3 Query	select * from articulos
+251201  2:03:12	     3 Query	select art_nom from articulos
+251201  2:03:18	     3 Query	select art_m from articulos
+251201  2:03:20	     3 Quit	
+251201  2:03:40	     4 Connect	root@localhost on practica using TCP/IP
+		     4 Query	SET NAMES utf8mb4
+		     4 Query	SET autocommit=0
+		     4 Query	SET autocommit=1
+		     4 Query	SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+		     4 Query	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW COLUMNS FROM `tiendas`
+		     4 Query	SHOW COLUMNS FROM `clientes`
+		     4 Query	SHOW COLUMNS FROM `articulos`
+		     4 Query	SHOW COLUMNS FROM `pesos`
+		     4 Query	SHOW COLUMNS FROM `proveedores`
+		     4 Query	SHOW COLUMNS FROM `ventas`
+251201  2:03:41	     4 Query	SHOW TABLES
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW COLUMNS FROM `tiendas`
+		     4 Query	SHOW COLUMNS FROM `clientes`
+		     4 Query	SHOW COLUMNS FROM `articulos`
+		     4 Query	SHOW COLUMNS FROM `pesos`
+		     4 Query	SHOW COLUMNS FROM `proveedores`
+		     4 Query	SHOW COLUMNS FROM `ventas`
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW COLUMNS FROM `tiendas`
+		     4 Query	SHOW COLUMNS FROM `clientes`
+		     4 Query	SHOW COLUMNS FROM `articulos`
+		     4 Query	SHOW COLUMNS FROM `pesos`
+		     4 Query	SHOW COLUMNS FROM `proveedores`
+		     4 Query	SHOW COLUMNS FROM `ventas`
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW COLUMNS FROM `tiendas`
+		     4 Query	SHOW COLUMNS FROM `clientes`
+		     4 Query	SHOW COLUMNS FROM `articulos`
+		     4 Query	SHOW COLUMNS FROM `pesos`
+		     4 Query	SHOW COLUMNS FROM `proveedores`
+		     4 Query	SHOW COLUMNS FROM `ventas`
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW COLUMNS FROM `tiendas`
+		     4 Query	SHOW COLUMNS FROM `clientes`
+		     4 Query	SHOW COLUMNS FROM `articulos`
+		     4 Query	SHOW COLUMNS FROM `pesos`
+		     4 Query	SHOW COLUMNS FROM `proveedores`
+		     4 Query	SHOW COLUMNS FROM `ventas`
+		     4 Quit	

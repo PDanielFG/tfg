@@ -60,13 +60,14 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
 
 
         table_name=MysqlLogLine._meta.db_table  # pylint: disable=no-member
-        with connection.cursor() as cursor:
-            #Django usa sqlite, no usa mysql, CUIDADO
-            cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table_name}';")
+        if 'sqlite' in connection.vendor:  # Solo si estamos usando SQLite
+            with connection.cursor() as cursor:
+                #Django usa sqlite, no usa mysql, CUIDADO
+                cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table_name}';")
 
         return Response(
             {"status": "deleted", "deleted_records": count},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
         )
     
     @action(detail=False, methods=['get'], url_path='connected-users')
