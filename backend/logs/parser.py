@@ -290,6 +290,8 @@ def is_valid_sql(query: str):
 
 def parse_mysql_log(filepath):
     parsed_lines = 0
+    thread_user_map = {}  # <--- Mapa thread_id -> user_host
+
 
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as file:    #Abro el txt evitando posibles excepciones
         for raw_line in file:   #itero en cada linea
@@ -320,12 +322,16 @@ def parse_mysql_log(filepath):
             error_message=None
 
             command_type = match.group('command_type')
+            thread_id = int(match.group('thread_id'))
+
 
             # Extraer user@host si es Connect
             if match.group('command_type') == "Connect":
                 m = re.search(r'(?P<user_host>[\w\-]+@[\w\.\-]+)', argument)
                 if m:
                     user_host = m.group("user_host")
+                    thread_user_map[thread_id] = user_host  # <-- guardamos el usuario
+
                 query=argument
                 was_error=False
                 error_message=None
@@ -333,8 +339,13 @@ def parse_mysql_log(filepath):
                 query=argument
                 was_error=False
                 error_message=None
+                user_host = thread_user_map.get(thread_id)  # <-- asignar usuario actual
+                thread_user_map.pop(thread_id, None)
+
+
             elif command_type=="Query":
                 query=argument
+                user_host = thread_user_map.get(thread_id)  # <-- aquí asignamos el usuario
                 is_valid, error_message=is_valid_sql(query)
                 was_error=not is_valid
 
