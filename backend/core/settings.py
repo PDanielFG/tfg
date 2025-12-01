@@ -88,7 +88,7 @@ DATABASES = {
     'mysql_logs': {  # MariaDB para validar logs
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'practica',
-        'USER': 'root',
+        'USER': 'test',
         'PASSWORD': '',
         'HOST': 'localhost',
         'PORT': '3306',

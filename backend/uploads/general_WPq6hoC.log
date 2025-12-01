@@ -1,0 +1,66 @@
+C:\Program Files\MariaDB 10.6\bin\mysqld.exe, Version: 10.6.24-MariaDB-log (MariaDB Server). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+251201 18:31:05	     3 Connect	root@localhost on  using TCP/IP
+		     3 Query	select @@version_comment limit 1
+251201 18:31:08	     3 Query	SELECT DATABASE()
+		     3 Init DB	practica
+251201 18:31:29	     3 Query	select * from articulos
+251201 18:31:36	     3 Query	select art_nm from articulos
+251201 18:31:42	     3 Query	select art_nm from articul
+251201 18:31:54	     3 Quit	
+251201 18:32:17	     4 Connect	root@localhost on practica using TCP/IP
+		     4 Query	SET NAMES utf8mb4
+		     4 Query	SET autocommit=0
+		     4 Query	SET autocommit=1
+		     4 Query	SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+		     4 Query	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW COLUMNS FROM `clientes`
+		     4 Query	SHOW COLUMNS FROM `ventas`
+		     4 Query	SHOW COLUMNS FROM `proveedores`
+		     4 Query	SHOW COLUMNS FROM `pesos`
+		     4 Query	SHOW COLUMNS FROM `tiendas`
+		     4 Query	SHOW COLUMNS FROM `articulos`
+		     4 Quit	
+251201 18:33:58	     5 Connect	root@localhost on practica using TCP/IP
+		     5 Query	SET NAMES utf8mb4
+		     5 Query	SET autocommit=0
+		     5 Query	SET autocommit=1
+		     5 Query	SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+		     5 Query	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED
+		     5 Query	SHOW TABLES
+		     5 Query	SHOW TABLES
+		     5 Query	SHOW COLUMNS FROM `articulos`
+251201 18:33:59	     5 Query	SHOW COLUMNS FROM `clientes`
+		     5 Query	SHOW COLUMNS FROM `proveedores`
+		     5 Query	SHOW COLUMNS FROM `tiendas`
+		     5 Query	SHOW COLUMNS FROM `pesos`
+		     5 Query	SHOW COLUMNS FROM `ventas`
+		     5 Quit	
+251201 18:36:37	     6 Connect	root@localhost on  using TCP/IP
+		     6 Query	select @@version_comment limit 1
+251201 18:36:44	     6 Query	show users
+251201 18:37:23	     6 Query	select user, host from mysql.user
+251201 18:37:47	     6 Query	create user 'test'@'%' identified by ''
+251201 18:37:51	     6 Query	select user, host from mysql.user
+251201 18:38:13	     6 Query	GRANT ALL PRIVILEGES ON *.* TO 'test'@'%' WITH GRANT OPTION
+251201 18:38:25	     6 Query	FLUSH PRIVILEGES
+251201 18:39:23	     6 Query	show grants for 'ana'@'%'
+251201 18:40:14	     6 Query	drop user 'ana'@'%'
+251201 18:40:19	     6 Query	select user, host from mysql.user
+251201 18:40:36	     6 Query	create user 'ana'@'%' identified by '123'
+251201 18:40:40	     6 Query	GRANT ALL PRIVILEGES ON *.* TO 'test'@'%' WITH GRANT OPTION
+251201 18:40:47	     6 Query	FLUSH PRIVILEGES
+251201 18:40:51	     6 Query	select user, host from mysql.user
