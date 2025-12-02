@@ -215,19 +215,26 @@ def validate_sql(query: str):
     # Normalización
     q_clean = " ".join(q.split())
 
-    # =========================
+       # =========================
     #       SELECT
     # =========================
     if q.startswith("select"):
-
         # SELECT sin columnas: "select from"
         if re.match(r"select\s+from\b", q_clean):
             return "Error SQL: falta especificar columnas en SELECT."
 
-        # SELECT * tabla → falta FROM
-        # SELECT columna tabla → falta FROM
+        # Si no hay FROM: permitir SELECT que sean solo expresiones, funciones o literales,
+        # por ejemplo: SELECT 1, SELECT 'texto', SELECT now(), SELECT database(), SELECT 1+2
         if " from " not in q_clean:
-            return "Error SQL: falta la cláusula FROM en la sentencia SELECT."
+            # Aceptamos SELECT <expr>[, <expr>...]
+            # <expr> puede contener: letras, dígitos, guiones bajos, paréntesis, comillas simples/dobles,
+            # puntos, operadores aritméticos y comas.
+            # Nota: no intentamos parsear a fondo aquí, solo validar forma.
+            if re.match(r"^select\s+[a-z0-9_\(\)\.\'\"]+([,\s\+\-\*\/\%a-z0-9_\(\)\.\'\"]*)*$", q_clean):
+                # Consideramos válido: devolver None para que siga el flujo normal
+                pass
+            else:
+                return "Error SQL: falta la cláusula FROM en la sentencia SELECT o sintaxis inválida para SELECT sin FROM."
 
         # FROM mal espaciado (p. ej., "*FROM")
         if "from" in q_clean and " from " not in q_clean:
@@ -348,7 +355,9 @@ def is_valid_sql(query: str):
         # Comprobación de FROM
         if "from" not in query:
             # pero permitimos "select 1", "select database()" etc
-            if not re.match(r"select\s+[\w\(\)\*]+", query):
+            if re.match(r"^select\s+.+", query):
+                return True, None
+            else:
                 return False, "Missing FROM clause"
 
         # Detectar palabras sospechosas
@@ -366,9 +375,10 @@ def is_valid_sql(query: str):
 
             
         #validar columnas inexistentes
-        is_valid_cols, error_cols = validate_columns(query, tables_in_query, TABLE_COLUMNS)
-        if not is_valid_cols:
-            return False, error_cols
+        if tables_in_query:    
+            is_valid_cols, error_cols = validate_columns(query, tables_in_query, TABLE_COLUMNS)
+            if not is_valid_cols:
+                return False, error_cols
 
 
 
