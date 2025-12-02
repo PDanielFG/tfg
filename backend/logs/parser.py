@@ -104,39 +104,41 @@ def extract_columns(sql):
     stmt = parsed[0]
     collecting = False  #Estamos antes del select o no
     columns = []    
-    buffer = ""
 
     for token in stmt.tokens:
         if token.ttype is DML and token.value.upper() == "SELECT":  #parte del select
             collecting = True
             continue
 
-        if token.ttype is Keyword and token.value.upper() == "FROM":    #Fin de columna
-            if buffer.strip():
-                columns.append(buffer.strip().lower())  
+        if token.ttype is Keyword and token.value.upper() == "FROM":    #Fin de columna 
             break
 
         if not collecting:
             continue
 
-        if token.ttype == sqlparse.tokens.Punctuation and token.value == ',':   #Separamos columnas por ,
-            if buffer.strip():
-                columns.append(buffer.strip().lower())
-                buffer = ""
+         # Ignorar comas y whitespace
+        if token.is_whitespace or token.ttype == sqlparse.tokens.Punctuation:
             continue
 
-        # Ignorar asterisco o funciones como database()
-        if token.value.strip() == '*' or '(' in token.value:
-            buffer = ""
+         # Ignorar asterisco y funciones
+        if token.value.strip() == "*" or "(" in token.value:
             continue
 
-        if not token.is_whitespace:
-            buffer += token.value
+        # Extraer columnas individuales
+        if isinstance(token, IdentifierList):
+            for identifier in token.get_identifiers():
+                real_name = identifier.get_real_name()
+                if real_name:
+                    columns.append(real_name.lower())
+        elif isinstance(token, Identifier):
+            real_name = token.get_real_name()
+            if real_name:
+                columns.append(real_name.lower())
+        else:
+            # Token simple, como "art_num"
+            columns.append(token.value.lower())
 
-    if buffer.strip():
-        columns.append(buffer.strip().lower())
-
-    return columns  #Devuelve las columnas en minusculas de la consulta
+    return columns  # Devuelve columnas en minúsculas
 
 
 #las columnas de mi query existen en la tabla mencionada
