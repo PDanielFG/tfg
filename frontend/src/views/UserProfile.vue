@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 bg-gray-100 min-h-screen">
     <h1 class="text-2xl font-bold">
       Vista de {{ usuario?.user }}     <!--Aqui llamamos a la propiedad .user, porque asi lo definimos en el diccionario-->
     </h1>
