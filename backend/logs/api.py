@@ -110,28 +110,44 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
     #ESTO AÑADE A NUESTRA URL POR DEFECTO /api/logs/ el final de "user/userName"
     #De momento no llama al serializer, porque devolvemos el diccionario con las dos claves, 
     #no usamos el serializer porque usa todos los campos del log, y solo nos interesa el usuario
+
+    #El comentario anterior era de este mismo endpoint pero solo sacando el nombre de usuario a modo de prueba.
+    #Ahora lo hemos modificado, siguiendo una logica parecida
     @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)')
     def user_detail(self, request, username=None):
         """
-        Devuelve la información de un usuario concreto según su nombre.
+        Devuelve usuario, su última conexión y todas sus queries.
         """
-        # Filtramos los logs por el usuario 
-        #Por eso usamos el command_type = connect
-        logs = MysqlLogLine.objects.filter(command_type='Connect', user_host__isnull=False)     # pylint: disable=no-member   
-        
-        user_data = None
-        for log in logs:    #itera sobre todo los nombres de usuario
-            user_only = log.user_host.split('@')[0] #Extrae la parte antes del @, el user
-            if user_only == username:   #si lo que acabamos de extraer coincide con el parametro dinamico de la url lo guarda en el diccionario formado por las claves user y last_conected
-                user_data = {
-                    'user': user_only,
-                    'last_connected': log.timestamp #Esto es una instancia de nuetro modelo de logs, por eso tiene los atributos timestamp por ejemplo
-                }
-                break
 
-        #no existe el user
-        if not user_data:
-            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        # Obtener CONEXIONES del usuario
+        connections = MysqlLogLine.objects.filter(  # pylint: disable=no-member
+            command_type='Connect',
+            #filtra los registros que empiecen por username@, por ejemplo root@...
+            user_host__startswith=username + '@'    #username lo capturamos de la url dinamica y lo unimos a @
+                                                    #lo que va despues del @ es desde donde se conectan a nuestro servidor de bd, @localhost, desde la maquina, @office-> desde la oficina...
+                                                    #el servidor de bd será siempre el mismo, en este caso mi pc, pero puede ser cualqueira
+        ).order_by('-timestamp')
 
-        # Devolvemos directamente el diccionario, no el serializer
-        return Response(user_data)
+        if not connections:
+            return Response({'error': 'Usuario no encontrado'}, status=404)
+
+        last_connection = connections[0].timestamp
+
+        # Obtener QUERIES del usuario
+        queries = MysqlLogLine.objects.filter(  # pylint: disable=no-member
+            command_type='Query',
+            user_host__startswith=username + '@'    #Igual, pero en vez de devolver las conexiones de x usuario, devuelve todas las queries que hace
+        ).order_by('-timestamp')
+
+        #Transformamos los objetos de django de nuestra bd (registro de cada logs) a formato json para devolverlo y usarlos
+        query_serializer = LogSerializer(queries, many=True)
+
+        #diccionario que devuelve toda la info
+        response_data = {
+            "user": username,
+            "last_connected": last_connection,
+            "queries": query_serializer.data
+        }
+
+        return Response(response_data)
+

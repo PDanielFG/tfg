@@ -1,5 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import UploadFile from '@/components/UploadFile.vue'
+import UserProfile from '@/views/UserProfile.vue'
+import QueryList from '../views/QueryList.vue'
 
 const routes = [
   {
