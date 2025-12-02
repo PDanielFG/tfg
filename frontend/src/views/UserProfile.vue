@@ -47,6 +47,32 @@
         </tbody>
       </table>
     </div>
+
+    <h2 class="text-xl font-semibold mt-6 mb-4">Conexiones realizadas:</h2>
+
+    <div v-if="conexiones.length === 0" class="mt-2 text-gray-600">
+      Este usuario no tiene conexiones registradas.
+    </div>
+
+    <div v-if="conexiones.length" class="overflow-x-auto bg-white rounded-lg shadow mb-6">
+      <table class="min-w-full divide-y divide-gray-200 table-fixed">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Timestamp</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">User</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Id usuario</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr v-for="c in conexiones" :key="c.id" class="hover:bg-gray-50">
+            <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDate(c.timestamp) }}</td>
+            <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ c.user_host || '-' }}</td>
+            <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ c.thread_id || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </template>
 
@@ -59,6 +85,7 @@ export default {
     return {
       usuario: {},
       queries: [],
+      conexiones: [],
       error: null
     };
   },
@@ -73,6 +100,7 @@ export default {
           last_connected: res.data.last_connected
         };
         this.queries = res.data.queries;
+        this.conexiones = res.data.connections; //Llamamos a connections en vez de conexiones porque connections en la propiedad del backend, del diccionario
       })
       .catch(() => {
         this.error = "No se pudieron cargar los datos del usuario";

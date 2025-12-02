@@ -142,10 +142,16 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         #Transformamos los objetos de django de nuestra bd (registro de cada logs) a formato json para devolverlo y usarlos
         query_serializer = LogSerializer(queries, many=True)
 
-        #diccionario que devuelve toda la info
+        # convierte de objeto django a json, los registros de mi bd de django filtrados anteriormente
+        connection_serializer = LogSerializer(connections, many=True)
+
+
+        #diccionario que devuelve toda la info.
+        #Esto es para llamarlo en el frontend
         response_data = {
             "user": username,
             "last_connected": last_connection,
+            "connections": connection_serializer.data,
             "queries": query_serializer.data
         }
 
