@@ -1,0 +1,18 @@
+C:\Program Files\MariaDB 10.6\bin\mysqld.exe, Version: 10.6.24-MariaDB-log (MariaDB Server). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+251201 19:06:09	     3 Connect	root@localhost on  using TCP/IP
+		     3 Query	select @@version_comment limit 1
+251201 19:06:27	     4 Connect	ana@localhost on  using TCP/IP
+		     4 Query	select @@version_comment limit 1
+251201 19:06:30	     4 Query	SELECT DATABASE()
+		     4 Init DB	practica
+251201 19:06:36	     4 Query	select * from articulos
+251201 19:06:43	     4 Query	select * from tiendas
+251201 19:06:52	     3 Query	select * from provedor
+251201 19:06:56	     3 Query	SELECT DATABASE()
+		     3 Init DB	practica
+251201 19:06:57	     3 Query	select * from provedor
+251201 19:07:03	     3 Query	select * from proveedores
+251201 19:07:05	     3 Quit	
+251201 19:07:07	     4 Quit	

@@ -23,7 +23,14 @@ const routes = [
     component: function () {
       return import('../views/QueryList.vue')
     }
-  }
+  }, 
+  {
+    // Esto no tiene nada que ver con el endpoint de la api, es la url que se muestra en el navegador, por eso sigue otro formato distinto al de /api/logs/ NO CONFUNDIR
+    path: '/users/:username',
+    name: 'UserProfile',
+    component: () => import('@/views/UserProfile.vue')
+  },
+
 ]
 
 const router = createRouter({

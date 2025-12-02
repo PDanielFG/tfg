@@ -26,6 +26,7 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LogSerializer
     parser_classes = (MultiPartParser, FormParser)
 
+    #En upload o en delete, como son operaciones que no devuelven nada no se usa el serializer
     @action(detail=False, methods=["post"], url_path="upload")
     def upload(self, request):
 
@@ -94,6 +95,8 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(result)
     
+    #Aqui si se usa el serializdor porque nos interesa devolver todos los campos, y luego seleccionar en el frontend
+    #cual mostramos
     @action(detail=False, methods=['get'], url_path='queryList')
     def query_list(self, request):
         """
@@ -102,3 +105,33 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         logs = self.get_queryset()  # MysqlLogLine.objects.all()
         serializer = self.get_serializer(logs, many=True)
         return Response(serializer.data)
+    
+    
+    #ESTO AÑADE A NUESTRA URL POR DEFECTO /api/logs/ el final de "user/userName"
+    #De momento no llama al serializer, porque devolvemos el diccionario con las dos claves, 
+    #no usamos el serializer porque usa todos los campos del log, y solo nos interesa el usuario
+    @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)')
+    def user_detail(self, request, username=None):
+        """
+        Devuelve la información de un usuario concreto según su nombre.
+        """
+        # Filtramos los logs por el usuario 
+        #Por eso usamos el command_type = connect
+        logs = MysqlLogLine.objects.filter(command_type='Connect', user_host__isnull=False)     # pylint: disable=no-member   
+        
+        user_data = None
+        for log in logs:    #itera sobre todo los nombres de usuario
+            user_only = log.user_host.split('@')[0] #Extrae la parte antes del @, el user
+            if user_only == username:   #si lo que acabamos de extraer coincide con el parametro dinamico de la url lo guarda en el diccionario formado por las claves user y last_conected
+                user_data = {
+                    'user': user_only,
+                    'last_connected': log.timestamp #Esto es una instancia de nuetro modelo de logs, por eso tiene los atributos timestamp por ejemplo
+                }
+                break
+
+        #no existe el user
+        if not user_data:
+            return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Devolvemos directamente el diccionario, no el serializer
+        return Response(user_data)

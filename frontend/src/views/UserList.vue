@@ -19,10 +19,13 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-          <tr v-for="user in users" :key="user.user" class="hover:bg-gray-50">
+          <!--Con router link hacemos toda la fila clickable, hacia la nueva vista, eliminamos la etiqeuta tr
+          Con el parametro dinámico param, genera un endpoint nuevo usando el ednpoint que acabamos de crear en router index.js
+          con name UserProfile/parametro dincamico-->
+          <router-link v-for="user in users" :key="user.user" :to="{ name: 'UserProfile', params: { username: user.user } }" class="flex hover:bg-gray-50 cursor-pointer" style="display: table-row;">
             <td class="px-4 py-2 text-gray-700 text-center">{{ user.user }}</td>
             <td class="px-4 py-2 text-gray-700 text-center">{{ formatDate(user.last_connected) }}</td>
-          </tr>
+          </router-link>
         </tbody>
       </table>
     </div>
@@ -61,7 +64,7 @@ export default {
       timeStyle: 'medium',
       timeZone: 'UTC'   // Evita la conversión automática
     }).format(new Date(dateStr));
-  }
+    }
 
   }
 }
