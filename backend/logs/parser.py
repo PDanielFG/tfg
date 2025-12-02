@@ -198,6 +198,97 @@ def validate_columns(query, tables_in_query, table_columns):
     return True, None   #none es el mensaje de error
 
 
+def validate_sql(query: str):
+    """
+    Valida sintaxis SQL básica.
+    Devuelve un mensaje de error en texto si la query es inválida,
+    o None si está OK.
+    """
+
+    if not query or not query.strip():
+        return "Error SQL: sentencia vacía o incompleta."
+
+    q = query.lower().strip()
+
+    # Normalización
+    q_clean = " ".join(q.split())
+
+    # =========================
+    #       SELECT
+    # =========================
+    if q.startswith("select"):
+
+        # SELECT sin columnas: "select from"
+        if re.match(r"select\s+from\b", q_clean):
+            return "Error SQL: falta especificar columnas en SELECT."
+
+        # SELECT * tabla → falta FROM
+        # SELECT columna tabla → falta FROM
+        if " from " not in q_clean:
+            return "Error SQL: falta la cláusula FROM en la sentencia SELECT."
+
+        # FROM mal espaciado (p. ej., "*FROM")
+        if "from" in q_clean and " from " not in q_clean:
+            return "Error SQL: sintaxis incorrecta en la cláusula FROM."
+
+        # SELECT FROM tabla → falta columnas
+        if re.match(r"select\s+from\s+\w+", q_clean):
+            return "Error SQL: deben especificarse columnas antes de FROM."
+
+    # =========================
+    #       UPDATE
+    # =========================
+    elif q.startswith("update"):
+
+        # UPDATE tabla sin SET
+        if " set " not in q_clean:
+            return "Error SQL: falta la cláusula SET en la sentencia UPDATE."
+
+        # UPDATE sin tabla → ej: "UPDATE SET"
+        if re.match(r"update\s+set\b", q_clean):
+            return "Error SQL: falta el nombre de la tabla en UPDATE."
+
+    # =========================
+    #       DELETE
+    # =========================
+    elif q.startswith("delete"):
+
+        # DELETE sin FROM
+        if " from " not in q_clean:
+            return "Error SQL: falta la cláusula FROM en DELETE."
+
+        # DELETE FROM → pero sin tabla
+        if re.match(r"delete\s+from\s*$", q_clean):
+            return "Error SQL: falta el nombre de la tabla en DELETE."
+
+    # =========================
+    #       INSERT
+    # =========================
+    elif q.startswith("insert"):
+
+        # INSERT sin INTO
+        if " into " not in q_clean:
+            return "Error SQL: falta la cláusula INTO en INSERT."
+
+        # INSERT INTO sin tabla
+        if re.match(r"insert\s+into\s*$", q_clean):
+            return "Error SQL: falta el nombre de la tabla en INSERT."
+
+        # INSERT INTO tabla sin VALUES
+        if " values " not in q_clean:
+            return "Error SQL: falta la cláusula VALUES en INSERT."
+
+    # =========================
+    #   CONSULTA DEMASIADO CORTA
+    # =========================
+    tokens = q_clean.split()
+    if len(tokens) < 2:
+        return "Error SQL: sentencia demasiado corta o incompleta."
+
+    # Si todo está OK
+    return None
+
+
 def is_valid_sql(query: str):
     """
     Valida SQL de forma permisiva pero detectando errores comunes.
@@ -343,11 +434,20 @@ def parse_mysql_log(filepath):
                 thread_user_map.pop(thread_id, None)
 
 
-            elif command_type=="Query":
-                query=argument
-                user_host = thread_user_map.get(thread_id)  # <-- aquí asignamos el usuario
-                is_valid, error_message=is_valid_sql(query)
-                was_error=not is_valid
+            elif command_type == "Query":
+                query = argument
+                user_host = thread_user_map.get(thread_id)  # <-- asignamos usuario
+
+                # 1️⃣ Validación básica de sintaxis
+                error_message = validate_sql(query)
+                was_error = error_message is not None
+
+                # 2️⃣ Validación de tablas y columnas solo si no hubo error de sintaxis
+                if not was_error:
+                    is_valid, error_message_2 = is_valid_sql(query)
+                    was_error = not is_valid
+                    if error_message_2:
+                        error_message = error_message_2
 
             
             # print(f"DEBUG: '{query}' | tablas extraídas: {extract_tables(query)} | was_error={was_error} | error_message={error_message}")
