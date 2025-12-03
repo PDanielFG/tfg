@@ -61,6 +61,7 @@
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Timestamp</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">User</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Id usuario</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Duracion</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
@@ -68,6 +69,7 @@
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDate(c.timestamp) }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ c.user_host || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ c.thread_id || '-' }}</td>
+            <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{formatDuration(c.connection_duration)}}</td>
           </tr>
         </tbody>
       </table>
@@ -115,7 +117,15 @@ export default {
         timeStyle: 'medium',
         timeZone: 'UTC'
       }).format(new Date(dateStr));
-    }
+    },
+
+    formatDuration(duration) {
+    if (!duration) return '-';
+
+    // duration viene como "HH:MM:SS" desde Django
+    const [h, m, s] = duration.split(':');
+    return `${h}h ${m}m ${s}s`;
+  }
   }
 }
 </script>

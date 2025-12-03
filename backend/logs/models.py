@@ -26,6 +26,9 @@ class MysqlLogLine(models.Model):
     raw = models.TextField()
     parsed_at = models.DateTimeField(auto_now_add=True)
 
+    connection_duration = models.DurationField(null=True, blank=True)
+
+
     class Meta:
         ordering = ["-timestamp"]
         indexes = [

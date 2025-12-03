@@ -8,6 +8,7 @@ from sqlparse.sql import Identifier, IdentifierList
 from sqlparse.tokens import Keyword, DML
 from django.db import connection
 from django.db import connections
+from django.utils import timezone
 
 
 
@@ -417,6 +418,8 @@ def parse_mysql_log(filepath):
             hour, minute, second = map(int, match.group('time').split(':'))
 
             timestamp = datetime(year, month, day, hour, minute, second)
+            timestamp = timezone.make_aware(timestamp, timezone.get_current_timezone())
+
 
             argument= match.group("argument").strip()
             user_host = None
@@ -444,6 +447,19 @@ def parse_mysql_log(filepath):
                 error_message=None
                 user_host = thread_user_map.get(thread_id)  # <-- asignar usuario actual
                 thread_user_map.pop(thread_id, None)
+
+                # Obtener el último registro "Connect" con mismo thread_id
+                last_connect = MysqlLogLine.objects.filter(      # pylint: disable=no-member
+                    thread_id=thread_id,
+                    command_type="Connect"
+                ).order_by("-timestamp").first()
+
+                if last_connect:
+                    duration = timestamp - last_connect.timestamp
+
+                    # Guardar duración en el registro "Connect"
+                    last_connect.connection_duration = duration
+                    last_connect.save()
 
 
             elif command_type == "Query":
