@@ -24,6 +24,9 @@ nav {
     font-weight: bold;
     color: #2c3e50;
     margin-right: 1em;
+    &:hover{
+      color: #42b983;
+    } 
 
     &.router-link-exact-active {
       color: #42b983;
