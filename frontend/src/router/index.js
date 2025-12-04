@@ -33,7 +33,7 @@ const routes = [
     component: () => import('@/views/UserProfile.vue')
   },
   {
-    path: '/users/:username',
+    path: '/users/:username/graphics',
     name: 'UserGraphics',
     component: () => import('@/views/UserGraphics.vue')
   },
