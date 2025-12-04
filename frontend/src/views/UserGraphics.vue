@@ -12,23 +12,26 @@
         <!-- Aquí agregamos el gráfico -->
         <div class="mb-8">
             <ChartQueries :queries="queries" />
+            <ChartUserConnectionDuration :username="selectedUser" />
+
         </div>
     </div>
 
 </template>
-
 <script>
 import { getAPI } from '@/axios-api'
 import ChartQueries from '@/components/ChartQueries.vue'
+import ChartUserConnectionDuration from '@/components/ChartUserConnectionDuration.vue'
 
 export default {
     name: 'UserProfile',
-    components: { ChartQueries },
+    components: { ChartQueries, ChartUserConnectionDuration },
     data() {
         return {
             usuario: {},
             queries: [],
             conexiones: [],
+            selectedUser: this.$route.params.username, // Para el gráfico de conexiones
             error: null
         }
     },

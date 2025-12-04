@@ -1,15 +1,18 @@
 <template>
     <div class="w-64 h-64 mx-auto">
         <canvas ref="chartRef"></canvas>
-        <div v-if="!queries || queries.length === 0" class="text-gray-500 mt-2">
+        <div v-if="queries.length === 0" class="text-gray-500 mt-2">
             No hay queries para mostrar.
         </div>
+
     </div>
 </template>
 
 
 <!-- Componente que mostraremos en la view padre -->
 <script>
+import { getAPI } from '@/axios-api'
+
 //Cuidado con los imports
 import { ref, watch, onMounted, defineComponent } from 'vue'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, DoughnutController } from 'chart.js'
@@ -18,22 +21,27 @@ ChartJS.register(DoughnutController, ArcElement, Title, Tooltip, Legend)
 
 export default defineComponent({
     name: 'ChartQueries',
-    props: {
-        //Lo que recibe del padre, USerGraphics.vue, y el tipo de dato
-        queries: {
-            type: Array,
-            default: () => []
-        }
-    },
 
-    setup(props) {
+
+    setup() {
         const chartRef = ref(null)
+        const queries = ref([])
         let chartInstance = null
 
+        const fetchQueries = async () => {
+            try {
+                const res = await getAPI.get('/api/logs/queryList/')
+                queries.value = res.data
+                renderChart()
+            } catch (err) {
+                console.error('Error cargando queries:', err)
+            }
+        }
+
         const getChartData = () => {
-            
-            const errores = props.queries.filter(q => q.was_error).length   //Una parte del chart
-            const exitos = props.queries.length - errores   //l< otra
+
+            const errores = queries.value.filter(q => q.was_error).length
+            const exitos = queries.value.length - errores
 
             return {
                 labels: ['Correctas', 'Erróneas'],  //El nombre que recibe cada parte 
@@ -53,8 +61,14 @@ export default defineComponent({
             maintainAspectRatio: false, // permite que el canvas tome el tamaño del contenedor
 
             plugins: {
-                legend: { position: 'bottom' },
-                title: { display: true, text: 'Queries correctas vs erróneas' }
+                legend: { position: 'top' },
+                title: {
+                    display: true, text: 'Queries correctas vs erróneas',
+                    font: {
+                        size: 15,        // tamaño del texto
+                        weight: "bold"   // negrita
+                    },
+                }
             }
         }
 
@@ -69,10 +83,10 @@ export default defineComponent({
         }
 
         //montaje grafico
-        onMounted(renderChart)
-        watch(() => props.queries, renderChart, { deep: true })
+        onMounted(fetchQueries)
+        watch(queries, renderChart, { deep: true })
 
-        return { chartRef }
+        return { chartRef, queries }
     }
 })
 </script>
