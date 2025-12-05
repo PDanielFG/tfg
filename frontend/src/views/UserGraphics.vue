@@ -1,31 +1,33 @@
 <template>
     <div class="p-6 bg-gray-100 min-h-screen">
-        <h1 v-if="!queries || queries.length === 0" class="text-2xl font-bold mb-6">
-            <router-link
-                class="inline-block px-6 py-2 text-white font-semibold rounded-lg shadow-md transition-all duration-200 bg-[#42b983] hover:bg-[#369870] active:scale-95 cursor-pointer"
-                :to="`/users/${$route.params.username}/graphics`">
-                Ver estadísticas
-            </router-link>
-        </h1>
+        <div class="mb-8 flex justify-center flex-wrap gap-6">
+            <!-- Gráfico de queries correctas vs erróneas -->
+            <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
+                <ChartQueries :queries="queries" />
+            </div>
 
+            <!-- Gráfico de consultas complejas vs sencillas por usuario -->
+            <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
+                <ChartComplexityByUser :username="selectedUser" />
+            </div>
+        </div>
 
-        <!-- Aquí agregamos el gráfico -->
+        <!-- Gráfico de duración de conexión del usuario -->
         <div class="mb-8">
-            <ChartQueries :queries="queries" />
             <ChartUserConnectionDuration :username="selectedUser" />
-
         </div>
     </div>
-
 </template>
+
 <script>
 import { getAPI } from '@/axios-api'
+import ChartComplexityByUser from '@/components/ChartComplexityByUser.vue';
 import ChartQueries from '@/components/ChartQueries.vue'
 import ChartUserConnectionDuration from '@/components/ChartUserConnectionDuration.vue'
 
 export default {
     name: 'UserProfile',
-    components: { ChartQueries, ChartUserConnectionDuration },
+    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser },
     data() {
         return {
             usuario: {},
