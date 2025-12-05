@@ -9,6 +9,8 @@ from sqlparse.tokens import Keyword, DML
 from django.db import connection
 from django.db import connections
 from django.utils import timezone
+from typing import Optional, Dict, Any
+
 
 
 
@@ -437,12 +439,11 @@ def detect_complexity(query: str):
 def parse_mysql_log(filepath):
     parsed_lines = 0
     thread_user_map = {}  # <--- Mapa thread_id -> user_host
-
+    current_log = None
 
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as file:    #Abro el txt evitando posibles excepciones
         for raw_line in file:   #itero en cada linea
             line = raw_line.strip() #Elimino saltos de líneas y espacios al principio y fin
-            is_complex=False
 
 
             # Saltar encabezados inútiles de XAMPP
@@ -451,98 +452,97 @@ def parse_mysql_log(filepath):
 
             #Si la linea no sigue el formato definido en el regex LOG_PATTERN la descarta
             match = LOG_PATTERN.match(line)     
-            if not match:
-                continue
-
             
-            #Crea datetime real con todo lo anterior
-            year = 2000 + int(match.group('year'))
-            month = int(match.group('month'))
-            day = int(match.group('day'))
-            hour, minute, second = map(int, match.group('time').split(':'))
+            if match:
+                if current_log:
+                    save_log(current_log, thread_user_map)
+                    parsed_lines+=1
+                
+                current_log = {
+                    'year': 2000 + int(match.group('year')),
+                    'month': int(match.group('month')),
+                    'day': int(match.group('day')),
+                    'time': match.group('time'),
+                    'thread_id': int(match.group('thread_id')),
+                    'command_type': match.group('command_type'),
+                    'argument': match.group('argument').strip(),
+                    'raw': line
+                }
+            else:
+                if current_log:
+                    current_log['argument'] += '\n' + line  # pylint: disable=unsupported-assignment-operation
+                    current_log['raw'] += '\n' + line       # pylint: disable=unsupported-assignment-operation
 
-            timestamp = datetime(year, month, day, hour, minute, second)
-            timestamp = timezone.make_aware(timestamp, timezone.get_current_timezone())
-
-
-            argument= match.group("argument").strip()
-            user_host = None
-            query = ''
-            was_error=False
-            error_message=None
-
-            command_type = match.group('command_type')
-            thread_id = int(match.group('thread_id'))
-
-
-            # Extraer user@host si es Connect
-            if match.group('command_type') == "Connect":
-                m = re.search(r'(?P<user_host>[\w\-]+@[\w\.\-]+)', argument)
-                if m:
-                    user_host = m.group("user_host")
-                    thread_user_map[thread_id] = user_host  # <-- guardamos el usuario
-
-                query=argument
-                was_error=False
-                error_message=None
-            elif command_type=="Quit":
-                query=argument
-                was_error=False
-                error_message=None
-                user_host = thread_user_map.get(thread_id)  # <-- asignar usuario actual
-                thread_user_map.pop(thread_id, None)
-
-                # Obtener el último registro "Connect" con mismo thread_id
-                last_connect = MysqlLogLine.objects.filter(      # pylint: disable=no-member
-                    thread_id=thread_id,
-                    command_type="Connect"
-                ).order_by("-timestamp").first()
-
-                if last_connect:
-                    duration = timestamp - last_connect.timestamp
-
-                    # Guardar duración en el registro "Connect"
-                    last_connect.connection_duration = duration
-                    last_connect.save()
-
-
-            elif command_type == "Query":
-                query = argument
-                user_host = thread_user_map.get(thread_id)  # <-- asignamos usuario
-
-                #Validación básica de sintaxis
-                error_message = validate_sql(query)
-                was_error = error_message is not None
-
-                # Validación de tablas y columnas solo si no hubo error de sintaxis
-                if not was_error:
-                    is_valid, error_message_2 = is_valid_sql(query)
-                    was_error = not is_valid
-                    if error_message_2:
-                        error_message = error_message_2
-
-                if not was_error:
-                    is_complex = detect_complexity(query)
-            
-            # print(f"DEBUG: '{query}' | tablas extraídas: {extract_tables(query)} | was_error={was_error} | error_message={error_message}")
-
-
-            #Crea el registro en la base de datos.
-            #Con los campos del modelo
-            MysqlLogLine.objects.create(    # pylint: disable=no-member
-                timestamp=timestamp,
-                thread_id=int(match.group('thread_id')),
-                command_type=match.group('command_type'),
-                user_host=user_host,
-                query=query,
-                raw=line,
-                was_error=was_error,
-                error_message=error_message,
-                is_complex=is_complex,
-            )
-
-            parsed_lines += 1   #Contador de lineas parseadas
+    
+    # Guardar última query
+    if current_log:
+        save_log(current_log, thread_user_map)
+        parsed_lines += 1
 
     return parsed_lines
+
+
+def save_log(log_data, thread_user_map):
+    """Crea un registro en la base de datos a partir de log_data"""
+    timestamp = datetime.strptime(
+        f"{log_data['year']}-{log_data['month']:02}-{log_data['day']:02} {log_data['time']}",
+        "%Y-%m-%d %H:%M:%S"
+    )
+    timestamp = timezone.make_aware(timestamp, timezone.get_current_timezone())
+
+    command_type = log_data['command_type']
+    thread_id = log_data['thread_id']
+    argument = log_data['argument']
+    user_host = None
+    query = ''
+    was_error = False
+    error_message = None
+    is_complex = False
+
+    if command_type == "Connect":
+        m = re.search(r'(?P<user_host>[\w\-]+@[\w\.\-]+)', argument)
+        if m:
+            user_host = m.group("user_host")
+            thread_user_map[thread_id] = user_host
+        query = argument
+    elif command_type == "Quit":
+        user_host = thread_user_map.get(thread_id)
+        query = argument
+        thread_user_map.pop(thread_id, None)
+        # Actualizar duración de la conexión
+        last_connect = MysqlLogLine.objects.filter( # pylint: disable=no-member
+            thread_id=thread_id,
+            command_type="Connect"
+        ).order_by("-timestamp").first()
+        if last_connect:
+            duration = timestamp - last_connect.timestamp
+            last_connect.connection_duration = duration
+            last_connect.save()
+    elif command_type == "Query":
+        user_host = thread_user_map.get(thread_id)
+        query = argument
+        error_message = validate_sql(query)
+        was_error = error_message is not None
+
+        if not was_error:
+            is_valid, error_message_2 = is_valid_sql(query)
+            was_error = not is_valid
+            if error_message_2:
+                error_message = error_message_2
+        if not was_error:
+            is_complex = detect_complexity(query)
+
+    # Guardar en la base de datos
+    MysqlLogLine.objects.create(    # pylint: disable=no-member
+        timestamp=timestamp,
+        thread_id=thread_id,
+        command_type=command_type,
+        user_host=user_host,
+        query=query,
+        raw=log_data['raw'],
+        was_error=was_error,
+        error_message=error_message,
+        is_complex=is_complex,
+    )
 
 
