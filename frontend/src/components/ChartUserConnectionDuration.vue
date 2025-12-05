@@ -125,7 +125,7 @@ export default defineComponent({
             maintainAspectRatio: false,
             layout: {
                 padding: {
-                    top: 30, // espacio superior en píxeles
+                    top: 30,
                     bottom: 0,
                     left: 0,
                     right: 0
@@ -134,10 +134,10 @@ export default defineComponent({
             plugins: {
                 title: {
                     display: true,
-                    text: "Duración de conexión del usuario", // <-- tu título
+                    text: "Duración de conexión del usuario",
                     font: {
-                        size: 15,        // tamaño del texto
-                        weight: "bold"   // negrita
+                        size: 15,
+                        weight: "bold"
                     },
                     padding: {
                         top: 10,
@@ -146,9 +146,16 @@ export default defineComponent({
                 },
                 legend: {
                     position: "top"
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.raw; // el valor del dataset
+                            return formatDuration(value); // usamos la función que ya tienes
+                        }
+                    }
                 }
             },
-
             scales: {
                 y: {
                     beginAtZero: true,
@@ -164,6 +171,7 @@ export default defineComponent({
                 }
             }
         };
+
 
         const renderChart = () => {
             if (!chartRef.value) return;
