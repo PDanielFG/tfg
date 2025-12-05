@@ -392,6 +392,48 @@ def is_valid_sql(query: str):
     return False, f"Unknown or unsupported SQL command ({original})"
 
 
+def detect_complexity(query: str):
+    """
+    Determina si una consulta SQL es compleja basándose en reglas heurísticas.
+    Devuelve True si la consulta se considera compleja.
+    """
+
+    q = query.lower()
+
+    # Reglas básicas
+    if " join " in q:
+        return True
+
+    if " group by " in q or " having " in q:
+        return True
+
+    if " order by " in q and "," in q:  # varias columnas
+        return True
+
+    # Subconsultas: SELECT dentro de SELECT, FROM (...)
+    if re.search(r"\(\s*select ", q):
+        return True
+
+    # Muchas tablas → JOIN implícito
+    tables = extract_tables(q)
+    if len(tables) > 1:
+        return True
+
+    # Muchas columnas → consulta compleja
+    if q.count(",") >= 3:
+        return True
+
+    # Funciones agregadas / expresiones
+    if any(f in q for f in ["sum(", "count(", "avg(", "min(", "max("]):
+        return True
+
+    # Consultas largas
+    if len(q) > 150:
+        return True
+
+    return False
+
+
 def parse_mysql_log(filepath):
     parsed_lines = 0
     thread_user_map = {}  # <--- Mapa thread_id -> user_host
@@ -400,6 +442,8 @@ def parse_mysql_log(filepath):
     with open(filepath, 'r', encoding='utf-8', errors='ignore') as file:    #Abro el txt evitando posibles excepciones
         for raw_line in file:   #itero en cada linea
             line = raw_line.strip() #Elimino saltos de líneas y espacios al principio y fin
+            is_complex=False
+
 
             # Saltar encabezados inútiles de XAMPP
             if line.startswith("C:\\xampp") or line.startswith("TCP Port") or line.startswith("Time"):
@@ -466,17 +510,19 @@ def parse_mysql_log(filepath):
                 query = argument
                 user_host = thread_user_map.get(thread_id)  # <-- asignamos usuario
 
-                # 1️⃣ Validación básica de sintaxis
+                #Validación básica de sintaxis
                 error_message = validate_sql(query)
                 was_error = error_message is not None
 
-                # 2️⃣ Validación de tablas y columnas solo si no hubo error de sintaxis
+                # Validación de tablas y columnas solo si no hubo error de sintaxis
                 if not was_error:
                     is_valid, error_message_2 = is_valid_sql(query)
                     was_error = not is_valid
                     if error_message_2:
                         error_message = error_message_2
 
+                if not was_error:
+                    is_complex = detect_complexity(query)
             
             # print(f"DEBUG: '{query}' | tablas extraídas: {extract_tables(query)} | was_error={was_error} | error_message={error_message}")
 
@@ -492,6 +538,7 @@ def parse_mysql_log(filepath):
                 raw=line,
                 was_error=was_error,
                 error_message=error_message,
+                is_complex=is_complex,
             )
 
             parsed_lines += 1   #Contador de lineas parseadas
