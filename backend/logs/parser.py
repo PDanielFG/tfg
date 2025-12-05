@@ -455,7 +455,7 @@ def parse_mysql_log(filepath):
             
             if match:
                 if current_log:
-                    save_log(current_log, thread_user_map)
+                    save_log(current_log, thread_user_map)      #guarda el log en la bd antes de comenzar con otro
                     parsed_lines+=1
                 
                 current_log = {
@@ -484,11 +484,15 @@ def parse_mysql_log(filepath):
 
 def save_log(log_data, thread_user_map):
     """Crea un registro en la base de datos a partir de log_data"""
+   
+    #Zona horaria
     timestamp = datetime.strptime(
         f"{log_data['year']}-{log_data['month']:02}-{log_data['day']:02} {log_data['time']}",
         "%Y-%m-%d %H:%M:%S"
     )
     timestamp = timezone.make_aware(timestamp, timezone.get_current_timezone())
+
+
 
     command_type = log_data['command_type']
     thread_id = log_data['thread_id']
@@ -499,12 +503,16 @@ def save_log(log_data, thread_user_map):
     error_message = None
     is_complex = False
 
+    #Operacion de connect 
     if command_type == "Connect":
         m = re.search(r'(?P<user_host>[\w\-]+@[\w\.\-]+)', argument)
         if m:
-            user_host = m.group("user_host")
+            user_host = m.group("user_host")     #Extrae el host
             thread_user_map[thread_id] = user_host
+        
         query = argument
+   
+   #operacion de desconexion
     elif command_type == "Quit":
         user_host = thread_user_map.get(thread_id)
         query = argument
@@ -518,11 +526,13 @@ def save_log(log_data, thread_user_map):
             duration = timestamp - last_connect.timestamp
             last_connect.connection_duration = duration
             last_connect.save()
+   
+    #Consulta
     elif command_type == "Query":
         user_host = thread_user_map.get(thread_id)
         query = argument
         error_message = validate_sql(query)
-        was_error = error_message is not None
+        was_error = error_message is not None   #Marca si hubo error
 
         if not was_error:
             is_valid, error_message_2 = is_valid_sql(query)
@@ -530,7 +540,7 @@ def save_log(log_data, thread_user_map):
             if error_message_2:
                 error_message = error_message_2
         if not was_error:
-            is_complex = detect_complexity(query)
+            is_complex = detect_complexity(query)   #Detecta si la query es completa
 
     # Guardar en la base de datos
     MysqlLogLine.objects.create(    # pylint: disable=no-member
