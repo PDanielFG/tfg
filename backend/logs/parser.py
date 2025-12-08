@@ -503,6 +503,9 @@ def save_log(log_data, thread_user_map):
     error_message = None
     is_complex = False
 
+    syntax_error = False
+    logic_error = False
+
     #Operacion de connect 
     if command_type == "Connect":
         m = re.search(r'(?P<user_host>[\w\-]+@[\w\.\-]+)', argument)
@@ -531,16 +534,29 @@ def save_log(log_data, thread_user_map):
     elif command_type == "Query":
         user_host = thread_user_map.get(thread_id)
         query = argument
-        error_message = validate_sql(query)
-        was_error = error_message is not None   #Marca si hubo error
 
+        # === Validación de sintaxis básica ===
+        syntax_error_message = validate_sql(query)
+        syntax_error = syntax_error_message is not None
+
+    # === Validación lógica / existencia en BD ===
+        logic_error = False
+        logic_error_message = None
+        if not syntax_error:
+            logic_error, logic_error_message = is_valid_sql(query)
+
+        # === Marcar error general ===
+        was_error = syntax_error or logic_error
+        error_message = syntax_error_message or logic_error_message
+
+        # === Detectar complejidad solo si no hay errores ===
+        is_complex = False
         if not was_error:
-            is_valid, error_message_2 = is_valid_sql(query)
-            was_error = not is_valid
-            if error_message_2:
-                error_message = error_message_2
-        if not was_error:
-            is_complex = detect_complexity(query)   #Detecta si la query es completa
+            is_complex = detect_complexity(query)
+
+        log_data['syntax_error'] = syntax_error
+        log_data['logic_error'] = logic_error   
+
 
     # Guardar en la base de datos
     MysqlLogLine.objects.create(    # pylint: disable=no-member
@@ -553,6 +569,8 @@ def save_log(log_data, thread_user_map):
         was_error=was_error,
         error_message=error_message,
         is_complex=is_complex,
+        syntax_error=syntax_error,  
+        logic_error=logic_error 
     )
 
 

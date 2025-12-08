@@ -19,18 +19,34 @@
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Query</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Error</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Mensaje de error</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Error sintáctico</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Error lógico</th>
+ 
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-          <tr v-for="log in logs" :key="log.id"  :class="{'hover:bg-gray-50': true, 'bg-red-100 text-red-800': log.was_error === true, 'bg-green-100 text-green-800': log.was_error === false}">
+          <tr v-for="log in logs" :key="log.id"
+            :class="{ 'hover:bg-gray-50': true, 'bg-red-100 text-red-800': log.was_error === true, 'bg-green-100 text-green-800': log.was_error === false }">
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDate(log.timestamp) }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ log.user_host || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ log.thread_id || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ log.command_type || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ log.query || '-' }}</td>
             <!--si log.was_error es true pone si (que es la primera opcion antes del ?), si es false pone la segunda-->
-            <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">  {{ log.was_error === true ? 'Sí' : 'No' }}</td>
+            <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl"> {{ log.was_error === true ? 'Sí' :'No' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ log.error_message || '-' }}</td>
+            
+            <td class="px-4 py-2 text-center">
+              <CheckIcon v-if="log.syntax_error" class="w-6 h-6 text-green-600 mx-auto" />
+              <span v-else>-</span>
+
+            </td>
+
+            <td class="px-4 py-2 text-center">
+              <CheckIcon v-if="log.logic_error" class="w-6 h-6 text-green-600 mx-auto" />
+              <span v-else>-</span>
+            </td>
+
           </tr>
         </tbody>
       </table>
@@ -40,9 +56,13 @@
 
 <script>
 import { getAPI } from '@/axios-api';
+import { CheckIcon } from '@heroicons/vue/24/solid'
+
 
 export default {
   name: 'logsList',
+  components: { CheckIcon },
+
   data() {
     return {
       logs: [],
@@ -64,13 +84,13 @@ export default {
       }
     },
     formatDate(dateStr) {
-    if (!dateStr) return '-';
-    return new Intl.DateTimeFormat('es-ES', {
-      dateStyle: 'short',
-      timeStyle: 'medium',
-      timeZone: 'UTC'   // Evita la conversión automática
-    }).format(new Date(dateStr));
-  }
+      if (!dateStr) return '-';
+      return new Intl.DateTimeFormat('es-ES', {
+        dateStyle: 'short',
+        timeStyle: 'medium',
+        timeZone: 'UTC'   // Evita la conversión automática
+      }).format(new Date(dateStr));
+    }
 
   }
 }

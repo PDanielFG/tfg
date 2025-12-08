@@ -28,6 +28,9 @@ class MysqlLogLine(models.Model):
 
     connection_duration = models.DurationField(null=True, blank=True)
 
+    syntax_error = models.BooleanField(default=False)
+    logic_error = models.BooleanField(default=False)
+
 
     class Meta:
         ordering = ["-timestamp"]
