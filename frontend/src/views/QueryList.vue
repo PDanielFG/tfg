@@ -77,7 +77,8 @@ export default {
       try {
         const res = await getAPI.get('/api/logs/queryList/');
         console.log(res.data)
-        this.logs = res.data;
+        //Para evitar mostrar los registros de test, que no es ningun usuario en concreto, es para verificar la consulta solo
+        this.logs = res.data.filter(log => log.user_host && !log.user_host.startsWith('test@'));
       } catch (err) {
         console.error(err);
         this.error = 'Error al cargar los logs';
