@@ -62,7 +62,7 @@ export default defineComponent({
 
             //características
             return {
-                labels: ['Errores de Sintaxis', 'Errores Lógicos'],
+                labels: ['Sintaxis', 'Lógicos'],
                 datasets: [
                     {
                         label: 'Tipos de errores',
