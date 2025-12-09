@@ -6,6 +6,10 @@
                 <ChartQueries :queries="queries" />
             </div>
 
+            <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
+                <ChartErrorType :username="selectedUser" /> <!--Parametro dinamico-->
+            </div>
+
             <!-- Gráfico de consultas complejas vs sencillas por usuario -->
             <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
                 <ChartComplexityByUser :username="selectedUser" />
@@ -24,10 +28,11 @@ import { getAPI } from '@/axios-api'
 import ChartComplexityByUser from '@/components/ChartComplexityByUser.vue';
 import ChartQueries from '@/components/ChartQueries.vue'
 import ChartUserConnectionDuration from '@/components/ChartUserConnectionDuration.vue'
+import ChartErrorType from '@/components/ChartErrorType.vue';
 
 export default {
     name: 'UserProfile',
-    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser },
+    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser, ChartErrorType },
     data() {
         return {
             usuario: {},

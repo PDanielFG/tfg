@@ -1,0 +1,48 @@
+C:\Program Files\MariaDB 10.6\bin\mysqld.exe, Version: 10.6.24-MariaDB-log (MariaDB Server). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+251209  2:14:38	     3 Connect	ana@localhost on  using TCP/IP
+		     3 Query	select @@version_comment limit 1
+251209  2:14:42	     3 Query	SELECT DATABASE()
+		     3 Init DB	practica
+251209  2:15:07	     3 Query	select * from proveedores
+251209  2:15:17	     3 Query	select * from provedor
+251209  2:15:27	     3 Query	select * aritul
+251209  2:15:35	     3 Query	select * articulos
+251209  2:15:42	     3 Query	select * from articulos
+251209  2:15:52	     3 Query	SELECT 
+v.VNT_FCH,
+c.CLT_NOM AS Cliente,
+c.CLT_APELL AS Apellidos,
+a.ART_NOM AS Articulo,
+p.PRV_NOM AS Proveedor,
+t.TDA_POB AS Tienda,
+v.VNT_CANT,
+v.VNT_PRECIO
+FROM ventas v
+JOIN clientes c ON v.VNT_CLT = c.CLT_NUM
+JOIN articulos a ON v.VNT_ART = a.ART_NUM
+LEFT JOIN proveedores p ON a.ART_PRV = p.PRV_NUM
+JOIN tiendas t ON v.VNT_TDA = t.TDA_NUM
+251209  2:16:25	     3 Query	SELECT v.VNT_FCH, c.CLT_NOM AS Cliente, c.CLT_APELL AS Apellidos, a.ART_NOM AS Articulo, p.PRV_NOM AS Proveedor, t.TDA_POB AS Tienda, v.VNT_CANT, v.VNT_PRECIO FROM ventas v JOIN clientes c ON v.VNT_CLT = c.CLT_NUM JOIN articulos a ON v.VNT_ART = a.ART_NUM LEFT JOIN proveedores p ON a.ART_PRV = p.PRV_NUM JOIN tiendas t ON v.VNT_TDA = t.TDA_NUM
+251209  2:17:34	     4 Connect	test@localhost on practica using TCP/IP
+		     4 Query	SET NAMES utf8mb4
+		     4 Query	SET autocommit=0
+		     4 Query	SET autocommit=1
+		     4 Query	SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+		     4 Query	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW TABLES
+		     4 Query	SHOW COLUMNS FROM `clientes`
+		     4 Query	SHOW COLUMNS FROM `ventas`
+		     4 Query	SHOW COLUMNS FROM `proveedores`
+		     4 Query	SHOW COLUMNS FROM `pesos`
+		     4 Query	SHOW COLUMNS FROM `tiendas`
+		     4 Query	SHOW COLUMNS FROM `articulos`
+		     4 Quit	
+251209  2:33:00	     3 Quit	
