@@ -543,7 +543,8 @@ def save_log(log_data, thread_user_map):
         logic_error = False
         logic_error_message = None
         if not syntax_error:
-            logic_error, logic_error_message = is_valid_sql(query)
+            is_valid, logic_error_message = is_valid_sql(query)
+            logic_error = not is_valid  # <--- ESTA ES LA CORRECCIÓN
 
         # === Marcar error general ===
         was_error = syntax_error or logic_error
