@@ -37,15 +37,19 @@
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ log.error_message || '-' }}</td>
             
             <td class="px-4 py-2 text-center">
-              <CheckIcon v-if="log.syntax_error" class="w-6 h-6 text-green-600 mx-auto" />
+              <span v-if="log.syntax_error" class="text-red-600 font-semibold">
+                Error Sintaxis
+              </span>
               <span v-else>-</span>
-
             </td>
 
             <td class="px-4 py-2 text-center">
-              <CheckIcon v-if="log.logic_error" class="w-6 h-6 text-green-600 mx-auto" />
-              <span v-else>-</span>
-            </td>
+            <span v-if="log.logic_error" class="text-red-600 font-semibold">
+              Error Lógico
+            </span>
+            <span v-else>-</span>
+          </td>
+
 
           </tr>
         </tbody>
@@ -56,12 +60,10 @@
 
 <script>
 import { getAPI } from '@/axios-api';
-import { CheckIcon } from '@heroicons/vue/24/solid'
 
 
 export default {
   name: 'logsList',
-  components: { CheckIcon },
 
   data() {
     return {

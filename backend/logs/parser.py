@@ -542,7 +542,7 @@ def save_log(log_data, thread_user_map):
     # === Validación lógica / existencia en BD ===
         logic_error = False
         logic_error_message = None
-        if not syntax_error:
+        if not syntax_error:    #SOLO SE EJECUTA VALIDACIÓN LOGICA SI NO HAY ERROR SE SINTAXIS PREVIO
             is_valid, logic_error_message = is_valid_sql(query)
             logic_error = not is_valid  # <--- ESTA ES LA CORRECCIÓN
 
