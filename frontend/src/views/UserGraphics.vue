@@ -3,7 +3,7 @@
         <div class="mb-8 flex justify-center flex-wrap gap-6">
             <!-- Gráfico de queries correctas vs erróneas -->
             <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
-                <ChartQueries :queries="queries" />
+                <ChartQueries :username="selectedUser" />
             </div>
 
             <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
