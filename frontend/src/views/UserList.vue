@@ -51,7 +51,7 @@ export default {
       try {
         const res = await getAPI.get('/api/logs/connected-users/');
         console.log(res.data);
-        this.users = res.data;
+        this.users = res.data.filter(user => user.user.toLowerCase() !== 'test');
       } catch (err) {
         console.error('Error al cargar usuarios:', err);
         this.error = 'Error al cargar usuarios conectados';

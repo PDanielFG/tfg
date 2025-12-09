@@ -10,7 +10,9 @@
       <span>{{ formatDate(usuario?.last_connected) }}</span>
     </div>
 
-    <h2 class="text-xl font-semibold mt-6 mb-4">Queries realizadas:</h2>
+    <h2 class="text-xl font-semibold mt-6 mb-4">
+      Queries realizadas: <span class="text-gray-600">{{ queries.length }}</span>
+    </h2>
 
     <div v-if="queries.length === 0" class="mt-2 text-gray-600">
       Este usuario no tiene queries registradas.
