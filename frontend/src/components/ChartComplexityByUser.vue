@@ -60,12 +60,15 @@ export default defineComponent({
           responsive: true,
           plugins: {
             legend: { position: 'top' },
-            title: { display: true, text: `Consultas complejas vs simples` }
+            title: {
+              display: true,
+              text: `Consultas complejas vs simples`,
+              font: { size: 15, weight: 'bold' }
+            }
           }
         }
       })
     }
-
     onMounted(fetchUserQueries)
 
     return { chartRef, totalQueries }
