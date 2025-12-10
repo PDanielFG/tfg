@@ -21,8 +21,16 @@
             <ChartUserConnectionDuration :username="selectedUser" />
         </div>
 
-        <div class="mb-8">
-            <ChartQueriesByType :username="selectedUser" />
+        <div class="mb-8 flex justify-center flex-wrap gap-6">
+
+            <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
+                <ChartQueriesByType :username="selectedUser" />
+            </div>
+            <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
+                <ChartTablesRef :username="selectedUser" />
+            </div>
+
+
         </div>
     </div>
 </template>
@@ -34,10 +42,11 @@ import ChartQueries from '@/components/ChartQueries.vue'
 import ChartUserConnectionDuration from '@/components/ChartUserConnectionDuration.vue'
 import ChartErrorType from '@/components/ChartErrorType.vue';
 import ChartQueriesByType from '@/components/ChartQueriesByType.vue';
+import ChartTablesRef from '@/components/ChartTablesRef.vue';
 
 export default {
     name: 'UserProfile',
-    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser, ChartErrorType, ChartQueriesByType },
+    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser, ChartErrorType, ChartQueriesByType, ChartTablesRef },
     data() {
         return {
             usuario: {},
