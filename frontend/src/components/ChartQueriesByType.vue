@@ -57,6 +57,8 @@ export default {
     function groupByType(queries) {
       const result = {};
       queries.forEach(q => {
+        if(q.was_error) return
+
         const type = q.sql_type || "UNKNOWN";
         result[type] = (result[type] || 0) + 1;
       });

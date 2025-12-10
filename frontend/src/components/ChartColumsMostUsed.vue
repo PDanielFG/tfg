@@ -57,6 +57,8 @@ export default {
         function groupByColumn(queries) {
             const result = {};
             queries.forEach(q => {
+                if(q.was_error) return
+
                 if (q.columns && q.columns.length) {
                     q.columns.forEach(c => {
                         result[c] = (result[c] || 0) + 1;

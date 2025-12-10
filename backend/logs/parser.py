@@ -90,13 +90,6 @@ def extract_tables(sql):
     return tables
 
 
-#Verifica si un objeto identifier, identifica una tabla en la bd o no
-def identifier_is_table(identifier):
-    """True si la estructura encaja con tabla [AS alias]"""
-    return (
-        isinstance(identifier, sqlparse.sql.Identifier) and
-        identifier.get_real_name() is not None
-    )
 
 #Columnas mencionadas de una determinada query
 def extract_columns(sql):

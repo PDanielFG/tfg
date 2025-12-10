@@ -58,6 +58,9 @@ export default {
         function groupByTable(queries) {
             const result = {};
             queries.forEach(q => {
+
+                if (q.was_error) return;
+
                 if (q.tables && q.tables.length) {
                     q.tables.forEach(t => {
                         result[t] = (result[t] || 0) + 1;
