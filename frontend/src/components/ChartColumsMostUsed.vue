@@ -1,17 +1,16 @@
 <template>
-    <div class="w-full h-96 mx-auto">
-        <canvas ref="chartRef"></canvas>
+  <div class="w-full h-96 mx-auto">
+    <canvas ref="chartRef"></canvas>
 
-        <div v-if="Object.keys(groupedColumns).length === 0" class="text-gray-500 mt-2">
-            No hay datos para mostrar.
-        </div>
+    <div v-if="!counts || Object.keys(counts).length === 0" class="text-gray-500 mt-2">
+      No hay datos para mostrar.
     </div>
+  </div>
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { getAPI } from "@/axios-api";
-
 import {
     Chart as ChartJS,
     BarController,
@@ -22,94 +21,88 @@ import {
     Legend
 } from "chart.js";
 
-ChartJS.register(
-    BarController,
-    BarElement,
-    CategoryScale,
-    LinearScale,
-    Tooltip,
-    Legend
-);
+ChartJS.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default {
-    name: "ChartColumnsRef",
+  name: "ChartColumnsRef",
 
-    props: {
-        username: { type: String, required: true }
-    },
+  props: {
+    username: { type: String, required: true }
+  },
 
-    setup(props) {
-        const chartRef = ref(null);
-        let chartInstance = null;
+  setup(props) {
+    const chartRef = ref(null);
+    let chartInstance = null;
 
-        const groupedColumns = ref({});
+    // ref con counts y tableMap
+    const groupedColumns = ref({ counts: {}, tableMap: {} });
 
-        const fetchData = async () => {
-            try {
-                const res = await getAPI.get(`/api/logs/user/${props.username}/`);
-                groupedColumns.value = groupByColumn(res.data.queries || []);
-                renderChart();
-            } catch (err) {
-                console.error("Error:", err);
-            }
-        };
+    // computed para exponer counts directamente al template
+    const counts = computed(() => groupedColumns.value.counts);
 
-        function groupByColumn(queries) {
-            const result = {};
-            queries.forEach(q => {
-                if(q.was_error) return
+    const fetchData = async () => {
+      try {
+        const res = await getAPI.get(`/api/logs/user/${props.username}/`);
+        groupedColumns.value = groupByColumn(res.data.queries || []);
+        renderChart();
+      } catch (err) {
+        console.error("Error:", err);
+      }
+    };
 
-                if (q.columns && q.columns.length) {
-                    q.columns.forEach(c => {
-                        result[c] = (result[c] || 0) + 1;
-                    });
-                }
-            });
-            return result;
+    function groupByColumn(queries) {
+      const result = {};
+      const columnToTable = {};
+      queries.forEach(q => {
+        if (q.was_error) return;
+        if (q.columns && q.columns.length && q.tables && q.tables.length) {
+          q.columns.forEach((col, index) => {
+            result[col] = (result[col] || 0) + 1;
+            columnToTable[col] = q.tables[index] || "unknown";
+          });
         }
-
-        const renderChart = () => {
-            if (!chartRef.value) return;
-            if (chartInstance) chartInstance.destroy();
-
-            const labels = Object.keys(groupedColumns.value);
-            const counts = Object.values(groupedColumns.value);
-
-            chartInstance = new ChartJS(chartRef.value.getContext("2d"), {
-                type: "bar",
-                data: {
-                    labels,
-                    datasets: [
-                        {
-                            label: "Columnas más consultadas",
-                            data: counts,
-                            backgroundColor: "#2ecc71"
-                        }
-                    ]
-                },
-                options: {
-                    indexAxis: "y", // horizontal
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            title: { display: true, text: "Cantidad de consultas" }
-                        },
-                        y: {
-                            title: { display: true, text: "Columnas" }
-                        }
-                    }
-                }
-            });
-        };
-
-        onMounted(fetchData);
-
-        return { chartRef, groupedColumns };
+      });
+      return { counts: result, tableMap: columnToTable };
     }
+
+    const renderChart = () => {
+      if (!chartRef.value) return;
+      if (chartInstance) chartInstance.destroy();
+
+      const { counts, tableMap } = groupedColumns.value;
+      const labels = Object.keys(counts);
+      const data = Object.values(counts);
+
+      chartInstance = new ChartJS(chartRef.value.getContext("2d"), {
+        type: "bar",
+        data: { labels, datasets: [{ label: "Columnas más consultadas", data, backgroundColor: "#2ecc71" }] },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const colName = context.label;
+                  const tableName = tableMap[colName] || "unknown";
+                  return `${colName} (Tabla: ${tableName}) : ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { beginAtZero: true, title: { display: true, text: "Cantidad de consultas" } },
+            y: { title: { display: true, text: "Columnas" } }
+          }
+        }
+      });
+    };
+
+    onMounted(fetchData);
+
+    return { chartRef, groupedColumns, counts };
+  }
 };
 </script>
