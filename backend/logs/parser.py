@@ -506,6 +506,8 @@ def save_log(log_data, thread_user_map):
     syntax_error = False
     logic_error = False
 
+    sql_type=None
+
     #Operacion de connect 
     if command_type == "Connect":
         m = re.search(r'(?P<user_host>[\w\-]+@[\w\.\-]+)', argument)
@@ -534,6 +536,16 @@ def save_log(log_data, thread_user_map):
     elif command_type == "Query":
         user_host = thread_user_map.get(thread_id)
         query = argument
+
+        # === Detectar tipo SQL ===
+        if query:
+            first_word = query.split()[0].upper()
+            if first_word in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "SHOW", "DESCRIBE", "USE"]:
+                sql_type = first_word
+            else:
+                sql_type = "UNKNOWN"
+        else:
+            sql_type = "UNKNOWN"
 
         # === Validación de sintaxis básica ===
         syntax_error_message = validate_sql(query)
@@ -566,6 +578,7 @@ def save_log(log_data, thread_user_map):
         command_type=command_type,
         user_host=user_host,
         query=query,
+        sql_type=sql_type,
         raw=log_data['raw'],
         was_error=was_error,
         error_message=error_message,

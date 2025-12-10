@@ -1,0 +1,46 @@
+C:\Program Files\MariaDB 10.6\bin\mysqld.exe, Version: 10.6.24-MariaDB-log (MariaDB Server). started with:
+TCP Port: 3306, Named Pipe: C:/xampp/mysql/mysql.sock
+Time		    Id Command	Argument
+251210 14:54:40	     3 Connect	ana@localhost on  using TCP/IP
+		     3 Query	select @@version_comment limit 1
+251210 14:54:43	     3 Query	SELECT DATABASE()
+		     3 Init DB	practica
+251210 14:54:46	     3 Query	select * from tiendas
+251210 14:54:50	     3 Query	select * tiendas
+251210 14:55:10	     3 Query	SELECT VNT_CLT, VNT_ART, VNT_CANT, VNT_PRECIO 
+FROM ventas
+WHERE VNT_CLT = 1
+251210 14:55:17	     3 Query	SELECT a.ART_NOM, p.PRV_NOM
+FROM articulos a
+JOIN proveedores p ON a.ART_PRV = p.PRV_NUM
+251210 14:55:39	     3 Query	select * from articulos
+251210 14:55:43	     3 Query	INSERT INTO articulos (ART_NUM, ART_NOM, ART_PESO, ART_COL, ART_PC, ART_PV, ART_PRV)
+VALUES (101, 'Galletas', 500, 'Marr¢n', 2, 3, 1)
+251210 14:55:46	     3 Query	select * from articulos
+251210 14:57:03	     3 Query	update articulos set art_peso=450 where art_num=101
+251210 14:57:07	     3 Query	select * from articulos
+251210 14:57:31	     3 Query	delete from articulos where art_num=101
+251210 14:57:33	     3 Query	select * from articulos
+251210 14:57:43	     3 Query	CREATE TABLE categorias (
+  CAT_NUM INT NOT NULL,
+  CAT_NOM VARCHAR(20) NOT NULL,
+  PRIMARY KEY (CAT_NUM)
+)
+251210 14:57:51	     3 Query	show tables
+251210 14:58:01	     3 Query	drop tables categoria
+251210 14:58:08	     3 Query	drop tables categorias
+251210 14:58:10	     3 Query	show tables
+251210 14:58:23	     3 Query	select * from articulos
+251210 14:58:30	     3 Query	ALTER TABLE clientes
+MODIFY CLT_PAIS VARCHAR(10)
+251210 14:58:33	     3 Query	select * from articulos
+251210 14:58:55	     3 Query	ALTER TABLE articulos
+ADD COLUMN ART_DESC VARCHAR(100)
+251210 14:58:57	     3 Query	select * from articulos
+251210 14:59:15	     3 Quit	
+251210 14:59:21	     4 Connect	ana@localhost on  using TCP/IP
+		     4 Query	select @@version_comment limit 1
+251210 14:59:23	     4 Query	SELECT DATABASE()
+		     4 Init DB	practica
+251210 14:59:29	     4 Query	select * from articulos
+251210 15:14:09	     4 Quit	

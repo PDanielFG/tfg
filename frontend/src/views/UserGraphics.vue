@@ -20,6 +20,10 @@
         <div class="mb-8">
             <ChartUserConnectionDuration :username="selectedUser" />
         </div>
+
+        <div class="mb-8">
+            <ChartQueriesByType :username="selectedUser" />
+        </div>
     </div>
 </template>
 
@@ -29,10 +33,11 @@ import ChartComplexityByUser from '@/components/ChartComplexityByUser.vue';
 import ChartQueries from '@/components/ChartQueries.vue'
 import ChartUserConnectionDuration from '@/components/ChartUserConnectionDuration.vue'
 import ChartErrorType from '@/components/ChartErrorType.vue';
+import ChartQueriesByType from '@/components/ChartQueriesByType.vue';
 
 export default {
     name: 'UserProfile',
-    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser, ChartErrorType },
+    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser, ChartErrorType, ChartQueriesByType },
     data() {
         return {
             usuario: {},
