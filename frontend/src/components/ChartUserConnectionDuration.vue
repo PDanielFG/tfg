@@ -1,61 +1,44 @@
 <template>
-    <div class="w-full h-72 mx-auto">
+    <div class="w-full h-80 mx-auto">
         <canvas ref="chartRef"></canvas>
 
-        <div v-if="chartData.length === 0" class="text-gray-500 mt-2">
-            No hay datos de conexión para mostrar.
+        <div v-if="finalData.length === 0" class="text-gray-500 mt-2">
+            No hay datos para mostrar.
         </div>
     </div>
 </template>
+
 <script>
 import { ref, watch, onMounted, defineComponent } from "vue";
 import { getAPI } from "@/axios-api";
 
-//Importante las importaciones
 import {
-    Chart as ChartJS,
-    BarController,
-    BarElement,
-    CategoryScale,
-    LinearScale,
-    Tooltip,
-    Legend
-} from "chart.js";
+    Chart as ChartJS, BarController, LineController, BarElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend} from "chart.js";
 
-ChartJS.register(
-    BarController,
-    BarElement,
-    CategoryScale,
-    LinearScale,
-    Tooltip,
-    Legend
-);
+ChartJS.register(BarController, LineController, BarElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default defineComponent({
     name: "ChartUserConnectionDuration",
 
     props: {
-        username: {
-            type: String,
-            required: true
-        }
+        username: { type: String, required: true }
     },
 
     setup(props) {
         const chartRef = ref(null);
         let chartInstance = null;
 
-        const chartData = ref([]);
+        const finalData = ref([]);
 
         // ---------------------------
-        // 1. LLAMADA AL ENDPOINT EXISTENTE USANDO getAPI
+        // 1. LLAMADA AL ENDPOINT
         // ---------------------------
-        const fetchConnections = async () => {
+        const fetchData = async () => {
             try {
                 const res = await getAPI.get(`/api/logs/user/${props.username}/`);
-                const processed = processConnections(res.data.connections);
 
-                chartData.value = processed;
+                finalData.value = processSessions(res.data.connections, res.data.queries);  //Conexiones y queries, los dos
+
                 renderChart();
             } catch (err) {
                 console.error("Error cargando datos:", err);
@@ -63,132 +46,126 @@ export default defineComponent({
         };
 
         // ---------------------------
-        // 2. PROCESAR DURACIONES, AGRUPAR POR DÍA Y ORDENAR ASCENDENTE
+        // 2. PROCESAR SESIONES
         // ---------------------------
-        function processConnections(connections) {
-            const entries = connections.map(c => {
-                const day = c.timestamp.split("T")[0]; // YYYY-MM-DD
+        function processSessions(connections, queries) {
+            // Ordenar conexiones por timestamp
+            connections.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-                let seconds = 0;
-                if (c.connection_duration) {
-                    const [hh, mm, ss] = c.connection_duration.split(":").map(Number);
-                    seconds = hh * 3600 + mm * 60 + ss;
+            return connections.map(conn => {
+                const connTime = new Date(conn.timestamp);
+                let durationSeconds = 0;
+
+                if (conn.connection_duration) {
+                    const [hh, mm, ss] = conn.connection_duration.split(":").map(Number);
+                    durationSeconds = hh * 3600 + mm * 60 + ss;
                 }
 
-                return { day, duration_seconds: seconds };
-            });
+                // Contar queries dentro de esta sesión
+                const queriesInSession = queries.filter(q => {
+                    const qTime = new Date(q.timestamp);
+                    return qTime >= connTime && qTime <= new Date(connTime.getTime() + durationSeconds * 1000);
+                });
 
-            // Agrupar días repetidos sumando duración
-            const grouped = {};
-            entries.forEach(e => {
-                grouped[e.day] = (grouped[e.day] || 0) + e.duration_seconds;
+                return {
+                    sessionLabel: `${connTime.toISOString().slice(0, 16).replace("T", " ")}`, // ejemplo "2025-12-10 14:30"
+                    duration: durationSeconds,
+                    queries: queriesInSession.length
+                };
             });
-
-            // Convertir a array y ordenar por fecha ascendente
-            return Object.keys(grouped)
-                .sort((a, b) => new Date(a) - new Date(b)) // <-- orden ascendente
-                .map(day => ({
-                    day,
-                    duration_seconds: grouped[day]
-                }));
         }
 
         // ---------------------------
-        // 3. PREPARAR CHART.JS
+        // 3. FORMATEAR DURACIÓN
+        // ---------------------------
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            let label = "";
+            if (hours) label += hours + "h ";
+            if (minutes || hours) label += minutes + "m ";
+            label += secs + "s";
+            return label;
+        }
+
+        // ---------------------------
+        // 4. PREPARAR CHART.JS
         // ---------------------------
         const getChartData = () => ({
-            labels: chartData.value.map(e => e.day),
+            labels: finalData.value.map(e => e.sessionLabel),
             datasets: [
                 {
+                    type: "bar",
                     label: "Duración de conexión",
-                    data: chartData.value.map(e => e.duration_seconds),
-                    backgroundColor: "#3498db"
+                    data: finalData.value.map(e => e.duration),
+                    backgroundColor: "#3498db",
+                    yAxisID: "y",
+                    order: 1
+                },
+                {
+                    type: "line",
+                    label: "Queries por sesión",
+                    data: finalData.value.map(e => e.queries),
+                    borderColor: "#e74c3c",
+                    borderWidth: 2,
+                    tension: 0.2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: "#e74c3c",
+                    yAxisID: "y2",
+                    order: 0
                 }
             ]
         });
 
-        function formatDuration(seconds) {
-            if (seconds < 60) return `${seconds}s`;
-            if (seconds < 3600) {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}m ${secs}s`;
-            }
-            const hours = Math.floor(seconds / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            return `${hours}h ${mins}m ${secs}s`;
-        }
-
         const chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            layout: {
-                padding: {
-                    top: 30,
-                    bottom: 0,
-                    left: 0,
-                    right: 0
-                }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Duración de conexión del usuario",
-                    font: {
-                        size: 15,
-                        weight: "bold"
-                    },
-                    padding: {
-                        top: 10,
-                        bottom: 20
-                    }
-                },
-                legend: {
-                    position: "top"
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const value = context.raw; // el valor del dataset
-                            return formatDuration(value); // usamos la función que ya tienes
-                        }
-                    }
-                }
-            },
             scales: {
                 y: {
                     beginAtZero: true,
                     title: { display: true, text: "Duración" },
                     ticks: {
-                        callback: function (value) {
-                            return formatDuration(value);
-                        }
+                        callback: value => formatDuration(value)
                     }
                 },
-                x: {
-                    title: { display: true, text: "Dias conectados y duración" }
+                y2: {
+                    beginAtZero: true,
+                    position: "right",
+                    title: { display: true, text: "Número de queries" },
+                    grid: { drawOnChartArea: false }
+                },
+                x: { title: { display: true, text: "Sesiones" } }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            if (context.dataset.type === "bar") {
+                                return `Duración: ${formatDuration(context.raw)}`;
+                            }
+                            return `Queries: ${context.raw}`;
+                        }
+                    }
                 }
             }
         };
 
-
         const renderChart = () => {
             if (!chartRef.value) return;
-
             if (chartInstance) chartInstance.destroy();
 
             chartInstance = new ChartJS(chartRef.value.getContext("2d"), {
-                type: "bar",
                 data: getChartData(),
                 options: chartOptions
             });
         };
 
-        onMounted(fetchConnections);
-        watch(() => props.username, fetchConnections);
+        onMounted(fetchData);
+        watch(() => props.username, fetchData);
 
-        return { chartRef, chartData };
+        return { chartRef, finalData };
     }
 });
 </script>
