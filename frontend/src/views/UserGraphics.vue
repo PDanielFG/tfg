@@ -29,8 +29,9 @@
             <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
                 <ChartTablesRef :username="selectedUser" />
             </div>
-
-
+            <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
+                <ChartColumsMostUsed :username="selectedUser" />
+            </div>
         </div>
     </div>
 </template>
@@ -43,10 +44,11 @@ import ChartUserConnectionDuration from '@/components/ChartUserConnectionDuratio
 import ChartErrorType from '@/components/ChartErrorType.vue';
 import ChartQueriesByType from '@/components/ChartQueriesByType.vue';
 import ChartTablesRef from '@/components/ChartTablesRef.vue';
+import ChartColumsMostUsed from '@/components/ChartColumsMostUsed.vue';
 
 export default {
     name: 'UserProfile',
-    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser, ChartErrorType, ChartQueriesByType, ChartTablesRef },
+    components: { ChartQueries, ChartUserConnectionDuration, ChartComplexityByUser, ChartErrorType, ChartQueriesByType, ChartTablesRef, ChartColumsMostUsed },
     data() {
         return {
             usuario: {},

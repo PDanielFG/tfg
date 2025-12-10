@@ -26,5 +26,21 @@ class LogSerializer(serializers.ModelSerializer):
     def get_tables(self, obj):
         return extract_tables(obj.query) if obj.query else []
 
+    #Modificaicon para ignorar queries administrativas o de conexión que no correpsonden a columnas reales de mi bd
     def get_columns(self, obj):
-        return extract_columns(obj.query) if obj.query else []
+        if not obj.query:
+            return []
+
+        # Extraer columnas
+        columns = extract_columns(obj.query)
+        tables = extract_tables(obj.query)
+
+
+        # Ignorar comandos administrativos o tokens internos
+        ignore = {"init", "db"}  # puedes agregar más si aparecen otros falsos positivos
+        ignore |= set(t.lower() for t in tables)  #evita nombres de tablas
+
+        cleaned = [c for c in columns if c.lower() not in ignore]
+
+        return cleaned
+

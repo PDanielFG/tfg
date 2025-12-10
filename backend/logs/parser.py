@@ -567,6 +567,10 @@ def save_log(log_data, thread_user_map):
         if not was_error:
             is_complex = detect_complexity(query)
 
+        # Detectar tipo sql
+        # sql_type = extract_query_type(query)  # <-- NUEVO
+
+
         log_data['syntax_error'] = syntax_error
         log_data['logic_error'] = logic_error   
 
