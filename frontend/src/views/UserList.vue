@@ -6,6 +6,18 @@
       {{ error }}
     </div>
 
+    <!-- Controles de ordenación -->
+    <div class="mb-4 flex items-center justify-center gap-4">
+      <label class="text-gray-700 font-semibold">Ordenar por:</label>
+      <select v-model="sortOption" @change="sortUsers"
+        class="px-3 py-2 border rounded-lg bg-white shadow-sm focus:ring focus:ring-blue-300">
+        <option value="az">Usuario A → Z</option>
+        <option value="za">Usuario Z → A</option>
+        <option value="recent">Última conexión (más reciente)</option>
+        <option value="oldest">Última conexión (más antigua)</option>
+      </select>
+    </div>
+
     <div v-if="users.length === 0 && !error" class="text-gray-500">
       No hay usuarios conectados.
     </div>
@@ -40,7 +52,9 @@ export default {
   data() {
     return {
       users: [],
-      error: null
+      error: null,
+      sortOption: 'az' // opción por defecto
+
     }
   },
   created() {
@@ -52,9 +66,23 @@ export default {
         const res = await getAPI.get('/api/logs/connected-users/');
         console.log(res.data);
         this.users = res.data.filter(user => user.user.toLowerCase() !== 'test');
+        this.sortUsers(); // ordenar automáticamente al cargar
+
       } catch (err) {
         console.error('Error al cargar usuarios:', err);
         this.error = 'Error al cargar usuarios conectados';
+      }
+    },
+    // Método para ordenar usuarios
+    sortUsers() {
+      if (this.sortOption === "az") {
+        this.users.sort((a, b) => a.user.localeCompare(b.user));
+      } else if (this.sortOption === "za") {
+        this.users.sort((a, b) => b.user.localeCompare(a.user));
+      } else if (this.sortOption === "recent") {
+        this.users.sort((a, b) => new Date(b.last_connected) - new Date(a.last_connected));
+      } else if (this.sortOption === "oldest") {
+        this.users.sort((a, b) => new Date(a.last_connected) - new Date(b.last_connected));
       }
     },
     formatDate(dateStr) {
