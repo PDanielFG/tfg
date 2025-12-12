@@ -120,19 +120,30 @@ def extract_columns(sql):
         if token.value.strip() == "*" or "(" in token.value:
             continue
 
+        if isinstance(token, sqlparse.sql.Function):
+            continue
+
         # Extraer columnas individuales
-        if isinstance(token, IdentifierList):
+        if isinstance(token, sqlparse.sql.IdentifierList):
             for identifier in token.get_identifiers():
-                real_name = identifier.get_real_name()
-                if real_name:
-                    columns.append(real_name.lower())
-        elif isinstance(token, Identifier):
+                if isinstance(identifier, sqlparse.sql.Identifier):
+                    real_name = identifier.get_real_name()
+                    if real_name:
+                        columns.append(real_name.lower())
+
+            continue
+
+        if isinstance(token, sqlparse.sql.IdentifierList):
             real_name = token.get_real_name()
             if real_name:
                 columns.append(real_name.lower())
-        else:
-            # Token simple, como "art_num"
-            columns.append(token.value.lower())
+            continue
+
+        if hasattr(token, "value"):
+            value=token.value.strip()
+
+            if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", value):
+                columns.append(token.value.lower())
 
     return columns  # Devuelve columnas en minúsculas
 
