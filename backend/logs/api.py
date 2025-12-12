@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from django.core.files.storage import default_storage
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import connection
+from datetime import datetime, timedelta
+
 
 
 from .models import MysqlLogLine
@@ -156,4 +158,142 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         }
 
         return Response(response_data)
+    
 
+    #Endpoint para ahorrar trabajo al front
+    #Es concretamente para el grafico de complejidad de consultas y simples.
+    #Para cuando haya muchisimas no sature
+    @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)/complexity')
+    def user_complexity_queries(self, request, username=None):
+        # Filtrar todas las queries del usuario
+        queries = MysqlLogLine.objects.filter(      #pylint: disable=no-member
+            command_type='Query',
+            user_host__startswith=username + '@',   #Para saber las consultas que hace un determinado usuario
+            was_error=False     #Para ignorar las consultas erroneas
+        )
+
+        total = queries.count()
+        complejas = queries.filter(is_complex=True).count()
+        simples = total - complejas
+
+        # Devolver solo los datos necesarios
+        #no hace falta devolver el usuario, porque para el grafico de front ya sabe el usuario por props selectedUSer que se le pasa al grafico
+        response_data = {
+            "total": total,
+            "complejas": complejas,
+            "simples": simples
+        }
+
+        return Response(response_data)
+    
+    #Errores de sintaxis o logicos
+    @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)/errors')
+    def user_error_summary(self, request, username=None):
+        
+        # Filtrar todas las queries del usuario
+        queries = MysqlLogLine.objects.filter(      #pylint: disable=no-member
+            command_type='Query',
+            user_host__startswith=username + '@', 
+            # was_error=False       Error estoy contando los errores precisamente
+        )
+
+        # Contar errores por tipo
+        syntax_errors = queries.filter(syntax_error=True).count()
+        logic_errors = queries.filter(logic_error=True).count()
+
+        return Response({
+            "syntax_errors": syntax_errors,
+            "logic_errors": logic_errors
+        })
+    
+    #Queries correctas vs incorrecas
+    @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)/query-summary')
+    def user_query_summary(self, request, username=None):
+
+        # Filtrar todas las queries del usuario
+        queries = MysqlLogLine.objects.filter(      #pylint: disable=no-member
+            command_type='Query',
+            user_host__startswith=username + '@', 
+        )
+
+        # Contar queries erróneas y correctas
+        errores = queries.filter(was_error=True).count()
+        correctas = queries.count() - errores
+
+        return Response({
+            "correctas": correctas,
+            "erroneas": errores
+        })
+    
+    
+    #Grafico de duracion de conexion de sesion, y queries por sesion
+    @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)/sessions-summary')
+    def user_sessions_summary(self, request, username=None):
+        # Filtrar conexiones y queries del usuario
+        connections = MysqlLogLine.objects.filter(      #pylint: disable=no-member
+            command_type='Connect',
+            user_host__startswith=username + '@'
+        ).order_by('timestamp')
+
+        queries = MysqlLogLine.objects.filter(           #pylint: disable=no-member
+            command_type='Query',
+            user_host__startswith=username + '@'
+        ).order_by('timestamp')
+
+        data = []
+        for conn in connections:
+            conn_time = conn.timestamp
+            duration_seconds = 0
+            if conn.connection_duration:
+                duration_seconds = int(conn.connection_duration.total_seconds())
+
+            end_time = conn_time + timedelta(seconds=duration_seconds)
+
+            # Contar queries dentro de esta sesión
+            queries_in_session = queries.filter(timestamp__gte=conn_time, timestamp__lte=end_time)
+
+            data.append({
+                "sessionLabel": conn_time.strftime("%Y-%m-%d %H:%M"),
+                "duration": duration_seconds,
+                "queries": queries_in_session.count()
+            })
+
+        return Response(data)
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)')
+    def user_queries_summary(self, request, username=None):
+
+        # Filtrar solo las queries correctas del usuario
+        queries = MysqlLogLine.objects.filter(             #pylint: disable=no-member
+            command_type='Query',
+            user_host__startswith=username + '@',
+            was_error=False
+        ).values('sql_type', 'timestamp', 'command_text')  # Puedes devolver más campos si quieres
+
+        # Convertir queryset a lista de diccionarios
+        queries_list = list(queries)
+
+        return Response({
+            "queries": queries_list
+        })
+    
+    
+    @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)/tablesAndColumns')
+    def user_columns_summary(self, request, username=None):
+
+        # Filtrar queries del usuario
+        queries = MysqlLogLine.objects.filter(  #pylint: disable=no-member
+            command_type='Query',
+            user_host__startswith=username + '@',
+            was_error=False
+        )
+
+        # Serializamos los resultados
+        serializer = LogSerializer(queries, many=True)
+        serialized_data = serializer.data  # Esto ya tiene 'columns' y 'tables'
+
+        # Filtramos las que tienen columnas y tablas
+        # data = [q for q in serialized_data if q.get("columns") and q.get("tables") and len(q["columns"]) == len(q["tables"])]
+
+        data=serialized_data
+        return Response({"queries": data})

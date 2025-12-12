@@ -29,11 +29,9 @@ export default defineComponent({
 
     const fetchUserQueries = async () => {
       try {
-        const res = await getAPI.get(`/api/logs/user/${props.username}/`) // endpoint que devuelve datos del usuario
-        const queries = res.data.queries || []
-        const complejas = queries.filter(q => q.is_complex).length
-        const simples = queries.length - complejas
-        totalQueries.value = queries.length
+        const res = await getAPI.get(`/api/logs/user/${props.username}/complexity/`)
+        const {total, complejas, simples}=res.data
+        totalQueries.value=total
 
         await nextTick()
         renderChart(complejas, simples)

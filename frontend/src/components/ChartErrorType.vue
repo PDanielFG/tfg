@@ -6,14 +6,14 @@
             Cargando...
         </div>
 
-        <div v-if="!loading && queries.length === 0" class="text-gray-500 mt-2">
+        <div v-if="!loading && totalErrors === 0" class="text-gray-500 mt-2">
             No hay errores para mostrar.
         </div>
     </div>
 </template>
 
 <script>
-import { ref, watch, onMounted, defineComponent } from 'vue'
+import { ref, watch, onMounted, defineComponent, nextTick } from 'vue'
 import { getAPI } from '@/axios-api'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, DoughnutController } from 'chart.js'
 
@@ -36,43 +36,34 @@ export default defineComponent({
         const chartRef = ref(null)  //Referencia al canva del grafico   
         let chartInstance = null    //instancia del grafico
 
-        const queries = ref([])     //Queries del usuario
         const loading = ref(true)   //Indica si el usuario sigue cargando
+        const syntaxErrors = ref(0)
+        const logicErrors = ref(0)
+        const totalErrors = ref(0)
+
 
         //Funcion para traer datso de la API
-        const fetchQueries = () => {
-            loading.value = true    //Cargando (al principio)
+        const fetchErrors = async () => {
+            loading.value = true
+            try {
+                const res = await getAPI.get(`/api/logs/user/${props.username}/errors/`)
+                syntaxErrors.value = res.data.syntax_errors || 0
+                logicErrors.value = res.data.logic_errors || 0
+                totalErrors.value = syntaxErrors.value + logicErrors.value
 
-            getAPI.get(`/api/logs/user/${props.username}/`) //Consulta el endpoint de la API
-                .then(res => {
-                    queries.value = res.data.queries || []  //res-->objeto data-->Los datos (el diccionario que devolvemos en el endpoint de api.py queries-->Una de las propiedades del diccionario, devuelve todas las queries de ese usuario)
-                    loading.value = false                   //Deja de cargar porque ya tenemos los datos guardados
-                    renderChart()   //Imprime el grafico, llamando a la funcion correspondiente
-                })
-                //Si hay error vacía queries y oculta el loading 
-                .catch(() => {
-                    queries.value = []
-                    loading.value = false
-                })
-        }
 
-        const getChartData = () => {
-            const syntaxErrors = queries.value.filter(q => q.syntax_error).length   //num queries con syntax_error
-            const logicErrors = queries.value.filter(q => q.logic_error).length //num queries con error logico
-
-            //características
-            return {
-                labels: ['Sintaxis', 'Lógicos'],
-                datasets: [
-                    {
-                        label: 'Tipos de errores',
-                        data: [syntaxErrors, logicErrors],
-                        backgroundColor: ['#e67e22', '#c0392b'],
-                        borderWidth: 1
-                    }
-                ]
+                await nextTick()
+                renderChart()
+            } catch (err) {
+                console.error('Error cargando errores del usuario:', err)
+                syntaxErrors.value = 0
+                logicErrors.value = 0
+                totalErrors.value = 0
+            } finally {
+                loading.value = false
             }
         }
+
 
         //Opciones del grafico
         const chartOptions = {
@@ -95,18 +86,26 @@ export default defineComponent({
 
             chartInstance = new ChartJS(chartRef.value.getContext('2d'), {
                 type: 'doughnut',
-                data: getChartData(),
+                data: {
+                    labels: ['Sintaxis', 'Lógicos'],
+                    datasets: [{
+                        label: 'Errores',
+                        data: [syntaxErrors.value, logicErrors.value],
+                        backgroundColor: ['#e67e22', '#c0392b'],
+                        borderWidth: 1
+                    }]
+                },
                 options: chartOptions
             })
         }
 
-        onMounted(fetchQueries)
+        onMounted(fetchErrors)
 
         watch(() => props.username, () => {
-            fetchQueries()
+            fetchErrors()
         })
 
-        return { chartRef, queries, loading }
+        return { chartRef, loading, totalErrors }
     }
 })
 </script>

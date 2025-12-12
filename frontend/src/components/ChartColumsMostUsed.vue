@@ -12,13 +12,13 @@
 import { ref, onMounted, computed } from "vue";
 import { getAPI } from "@/axios-api";
 import {
-    Chart as ChartJS,
-    BarController,
-    BarElement,
-    CategoryScale,
-    LinearScale,
-    Tooltip,
-    Legend
+  Chart as ChartJS,
+  BarController,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend
 } from "chart.js";
 
 ChartJS.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -42,7 +42,7 @@ export default {
 
     const fetchData = async () => {
       try {
-        const res = await getAPI.get(`/api/logs/user/${props.username}/`);
+        const res = await getAPI.get(`/api/logs/user/${props.username}/tablesAndColumns/`);
         groupedColumns.value = groupByColumn(res.data.queries || []);
         renderChart();
       } catch (err) {
@@ -84,7 +84,7 @@ export default {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: function (context) {
                   const colName = context.label;
                   const tableName = tableMap[colName] || "unknown";
                   return `${colName} (Tabla: ${tableName}) : ${context.raw}`;

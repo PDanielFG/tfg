@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { ref, watch, onMounted, defineComponent } from 'vue'
+import { ref, watch, onMounted, defineComponent, nextTick } from 'vue'
 import { getAPI } from '@/axios-api'
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, DoughnutController } from 'chart.js'
 
@@ -32,17 +32,19 @@ export default defineComponent({
   setup(props) {
     const chartRef = ref(null)
     let chartInstance = null
-    const queries = ref([])
+    const totalQueries = ref(0)
     const loading = ref(true)
 
     // Traer queries de un usuario específico
     const fetchQueries = async () => {
       loading.value = true
       try {
-        const res = await getAPI.get(`/api/logs/user/${props.username}/`)
-        queries.value = res.data.queries || []
-        loading.value = false
-        renderChart()
+        const res = await getAPI.get(`/api/logs/user/${props.username}/query-summary/`)
+        const { correctas, erroneas } = res.data
+        totalQueries.value = correctas + erroneas
+        await nextTick()
+
+        renderChart(correctas, erroneas)
       } catch (err) {
         console.error('Error cargando queries:', err)
         queries.value = []
@@ -50,22 +52,6 @@ export default defineComponent({
       }
     }
 
-    const getChartData = () => {
-      const errores = queries.value.filter(q => q.syntax_error || q.logic_error).length
-      const exitos = queries.value.length - errores
-
-      return {
-        labels: ['Correctas', 'Erróneas'],
-        datasets: [
-          {
-            label: 'Queries',
-            data: [exitos, errores],
-            backgroundColor: ['#42b983', '#e74c3c'],
-            borderWidth: 1
-          }
-        ]
-      }
-    }
 
     const chartOptions = {
       responsive: true,
@@ -80,12 +66,20 @@ export default defineComponent({
       }
     }
 
-    const renderChart = () => {
+    const renderChart = (correctas, erroneas) => {
       if (!chartRef.value) return
       if (chartInstance) chartInstance.destroy()
       chartInstance = new ChartJS(chartRef.value.getContext('2d'), {
         type: 'doughnut',
-        data: getChartData(),
+        data: {
+          labels: ['Correctas', 'Erróneas'],
+          datasets: [{
+            label: 'Queries',
+            data: [correctas, erroneas],
+            backgroundColor: ['#42b983', '#e74c3c'],
+            borderWidth: 1
+          }]
+        },
         options: chartOptions
       })
     }
@@ -94,7 +88,7 @@ export default defineComponent({
 
     watch(() => props.username, fetchQueries)
 
-    return { chartRef, queries, loading }
+    return { chartRef, totalQueries, loading }
   }
 })
 </script>

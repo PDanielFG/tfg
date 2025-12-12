@@ -13,7 +13,8 @@ import { ref, watch, onMounted, defineComponent } from "vue";
 import { getAPI } from "@/axios-api";
 
 import {
-    Chart as ChartJS, BarController, LineController, BarElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend} from "chart.js";
+    Chart as ChartJS, BarController, LineController, BarElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend
+} from "chart.js";
 
 ChartJS.register(BarController, LineController, BarElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -35,45 +36,18 @@ export default defineComponent({
         // ---------------------------
         const fetchData = async () => {
             try {
-                const res = await getAPI.get(`/api/logs/user/${props.username}/`);
+                const res = await getAPI.get(`/api/logs/user/${props.username}/sessions-summary/`);
 
-                finalData.value = processSessions(res.data.connections, res.data.queries);  //Conexiones y queries, los dos
-
-                renderChart();
+                finalData.value = res.data;
+                renderChart()
+             
             } catch (err) {
                 console.error("Error cargando datos:", err);
+                finalData.value=[]
             }
         };
 
-        // ---------------------------
-        // 2. PROCESAR SESIONES
-        // ---------------------------
-        function processSessions(connections, queries) {
-            // Ordenar conexiones por timestamp
-            connections.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-            return connections.map(conn => {
-                const connTime = new Date(conn.timestamp);
-                let durationSeconds = 0;
-
-                if (conn.connection_duration) {
-                    const [hh, mm, ss] = conn.connection_duration.split(":").map(Number);
-                    durationSeconds = hh * 3600 + mm * 60 + ss;
-                }
-
-                // Contar queries dentro de esta sesión
-                const queriesInSession = queries.filter(q => {
-                    const qTime = new Date(q.timestamp);
-                    return qTime >= connTime && qTime <= new Date(connTime.getTime() + durationSeconds * 1000);
-                });
-
-                return {
-                    sessionLabel: `${connTime.toISOString().slice(0, 16).replace("T", " ")}`, // ejemplo "2025-12-10 14:30"
-                    duration: durationSeconds,
-                    queries: queriesInSession.length
-                };
-            });
-        }
+       
 
         // ---------------------------
         // 3. FORMATEAR DURACIÓN

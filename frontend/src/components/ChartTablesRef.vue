@@ -46,7 +46,7 @@ export default {
 
         const fetchData = async () => {
             try {
-                const res = await getAPI.get(`/api/logs/user/${props.username}/`);
+                const res = await getAPI.get(`/api/logs/user/${props.username}/tablesAndColumns/`);
                 groupedTables.value = groupByTable(res.data.queries || []);
                 renderChart();
             } catch (err) {
