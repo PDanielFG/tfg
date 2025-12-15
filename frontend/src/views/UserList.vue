@@ -6,10 +6,44 @@
       {{ error }}
     </div>
 
+        <!-- ⭐ NUEVO: Filtros -->
+    <div class="mb-6 flex flex-wrap items-end justify-center gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 font-semibold">Usuario</label>
+        <input
+          v-model="filterUsername"                 
+          @input="applyFilters"                   
+          type="text"
+          placeholder="Buscar usuario"
+          class="px-3 py-2 border rounded-lg shadow-sm focus:ring focus:ring-blue-300"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 font-semibold">Desde</label>
+        <input
+          v-model="filterFromDate"                 
+          @change="applyFilters"                  
+          type="date"
+          class="px-3 py-2 border rounded-lg shadow-sm"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 font-semibold">Hasta</label>
+        <input
+          v-model="filterToDate"                  
+          @change="applyFilters"                  
+          type="date"
+          class="px-3 py-2 border rounded-lg shadow-sm"
+        />
+      </div>
+    </div>
+
     <!-- Controles de ordenación -->
     <div class="mb-4 flex items-center justify-center gap-4">
       <label class="text-gray-700 font-semibold">Ordenar por:</label>
-      <select v-model="sortOption" @change="sortUsers"
+      <select v-model="sortOption" @change="applyFilters"
         class="px-3 py-2 border rounded-lg bg-white shadow-sm focus:ring focus:ring-blue-300">
         <option value="az">Usuario A → Z</option>
         <option value="za">Usuario Z → A</option>
@@ -52,9 +86,14 @@ export default {
   data() {
     return {
       users: [],
+      usersOriginal: [],
       error: null,
-      sortOption: 'az' // opción por defecto
+      sortOption: 'az', // opción por defecto
 
+
+      filterUsername: '',
+      filterFromDate: '',
+      filterToDate: ''
     }
   },
   created() {
@@ -65,14 +104,48 @@ export default {
       try {
         const res = await getAPI.get('/api/logs/connected-users/');
         console.log(res.data);
-        this.users = res.data.filter(user => user.user.toLowerCase() !== 'test');
-        this.sortUsers(); // ordenar automáticamente al cargar
+        this.usersOriginal = res.data.filter(user => user.user.toLowerCase() !== 'test');
+        
+        this.applyFilters(); // ordenar automáticamente al cargar
 
       } catch (err) {
         console.error('Error al cargar usuarios:', err);
         this.error = 'Error al cargar usuarios conectados';
       }
     },
+
+        applyFilters() {
+      let filtered = [...this.usersOriginal];
+
+      // Filtro por nombre de usuario
+      if (this.filterUsername) {               
+        const search = this.filterUsername.toLowerCase();
+        filtered = filtered.filter(user =>
+          user.user.toLowerCase().includes(search)
+        );
+      }
+
+      // Filtro por fecha desde
+      if (this.filterFromDate) {                
+        const from = new Date(this.filterFromDate);
+        filtered = filtered.filter(user =>
+          new Date(user.last_connected) >= from
+        );
+      }
+
+      // Filtro por fecha hasta
+      if (this.filterToDate) {                 
+        const to = new Date(this.filterToDate);
+        to.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(user =>
+          new Date(user.last_connected) <= to
+        );
+      }
+
+      this.users = filtered;
+      this.sortUsers();                         
+    },
+
     // Método para ordenar usuarios
     sortUsers() {
       if (this.sortOption === "az") {
