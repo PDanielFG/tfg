@@ -94,11 +94,42 @@ export default defineComponent({
             return label;
         }
 
+        function formatDateLabel(dateStr) {
+            if (!dateStr) return "";
+
+            // Separar fecha y hora si existe
+            const [datePart, timePart] = dateStr.split(" ");
+
+            const dateParts = datePart.split("-");
+
+            let formattedDate = dateStr;
+
+            // yyyy-mm-dd
+            if (dateParts.length === 3) {
+                const [year, month, day] = dateParts;
+                formattedDate = `${day}-${month}-${year}`;
+            }
+
+            // yyyy-mm
+            if (dateParts.length === 2) {
+                const [year, month] = dateParts;
+                formattedDate = `${month}-${year}`;
+            }
+
+            // Si hay hora → añadirla
+            if (timePart) {
+                const [hour, minute] = timePart.split(":");
+                formattedDate += ` | ${hour}:${minute}`;
+            }
+
+            return formattedDate;
+        }
+
         // ---------------------------
         // 4. PREPARAR CHART.JS
         // ---------------------------
         const getChartData = () => ({
-            labels: finalData.value.map(e => e.label),
+            labels: finalData.value.map(e => formatDateLabel(e.label)),
             datasets: [
                 {
                     type: "bar",
@@ -187,7 +218,7 @@ export default defineComponent({
 
             chartInstance = new ChartJS(chartRef.value.getContext("2d"), {
                 data: getChartData(),
-                options: chartOptions, 
+                options: chartOptions,
                 plugins: [dataLabelsPlugin]
             });
         };
