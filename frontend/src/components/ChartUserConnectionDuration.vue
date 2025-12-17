@@ -1,5 +1,20 @@
 <template>
     <div class="w-full h-80 mx-auto">
+
+        <!-- ⭐ NUEVO: Controles -->
+        <div class="flex flex-wrap justify-center gap-4 mb-4">
+            <select v-model="groupBy" class="border px-3 py-1 rounded shadow-sm">
+                <option value="session">Por sesión</option>
+                <option value="day">Por día</option>
+                <option value="week">Por semana</option>
+                <option value="month">Por mes</option>
+            </select>
+
+            <!-- ⭐ NUEVO: intervalo de fechas -->
+            <input type="date" v-model="fromDate" class="border px-2 py-1 rounded" />
+            <input type="date" v-model="toDate" class="border px-2 py-1 rounded" />
+        </div>
+
         <canvas ref="chartRef"></canvas>
 
         <div v-if="finalData.length === 0" class="text-gray-500 mt-2">
@@ -31,23 +46,39 @@ export default defineComponent({
 
         const finalData = ref([]);
 
+        const groupBy = ref("session");
+        const fromDate = ref("");
+        const toDate = ref("");
+
         // ---------------------------
         // 1. LLAMADA AL ENDPOINT
         // ---------------------------
         const fetchData = async () => {
             try {
-                const res = await getAPI.get(`/api/logs/user/${props.username}/sessions-summary/`);
+
+                const params = {};
+
+                if (groupBy.value !== "session") {
+                    params.group_by = groupBy.value;
+                }
+                if (fromDate.value) params.from = fromDate.value;
+                if (toDate.value) params.to = toDate.value;
+
+                const res = await getAPI.get(
+                    `/api/logs/user/${props.username}/sessions-summary/`,
+                    { params }
+                );
 
                 finalData.value = res.data;
                 renderChart()
-             
+
             } catch (err) {
                 console.error("Error cargando datos:", err);
-                finalData.value=[]
+                finalData.value = []
             }
         };
 
-       
+
 
         // ---------------------------
         // 3. FORMATEAR DURACIÓN
@@ -67,7 +98,7 @@ export default defineComponent({
         // 4. PREPARAR CHART.JS
         // ---------------------------
         const getChartData = () => ({
-            labels: finalData.value.map(e => e.sessionLabel),
+            labels: finalData.value.map(e => e.label),
             datasets: [
                 {
                     type: "bar",
@@ -126,20 +157,50 @@ export default defineComponent({
             }
         };
 
+
+        const dataLabelsPlugin = {
+            id: 'dataLabels',
+            afterDatasetsDraw(chart) {
+                const ctx = chart.ctx;
+
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    if (dataset.type !== 'bar') return;
+
+                    chart.getDatasetMeta(datasetIndex).data.forEach((bar, index) => {
+                        const value = dataset.data[index];
+                        const label = formatDuration(finalData.value[index].duration); // duración real
+                        ctx.save();
+                        ctx.fillStyle = '#000';
+                        ctx.font = '12px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(label, bar.x, bar.y - 5);
+                        ctx.restore();
+                    });
+                });
+            }
+        };
+
         const renderChart = () => {
             if (!chartRef.value) return;
             if (chartInstance) chartInstance.destroy();
 
             chartInstance = new ChartJS(chartRef.value.getContext("2d"), {
                 data: getChartData(),
-                options: chartOptions
+                options: chartOptions, 
+                plugins: [dataLabelsPlugin]
             });
         };
 
         onMounted(fetchData);
-        watch(() => props.username, fetchData);
 
-        return { chartRef, finalData };
+        watch(
+            [() => props.username, () => groupBy.value, () => fromDate.value, () => toDate.value],
+            fetchData,
+            { immediate: true }
+        );
+
+        return { chartRef, finalData, groupBy, fromDate, toDate };
     }
 });
 </script>

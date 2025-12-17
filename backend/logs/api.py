@@ -5,6 +5,9 @@ from django.core.files.storage import default_storage
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import connection
 from datetime import datetime, timedelta
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
+
 
 
 
@@ -229,37 +232,88 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
     #Grafico de duracion de conexion de sesion, y queries por sesion
     @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)/sessions-summary')
     def user_sessions_summary(self, request, username=None):
+        group_by = request.query_params.get("group_by", "session")
+        from_date = request.query_params.get("from")
+        to_date = request.query_params.get("to")
+
         # Filtrar conexiones y queries del usuario
-        connections = MysqlLogLine.objects.filter(      #pylint: disable=no-member
+        connections = MysqlLogLine.objects.filter(  #pylint: disable=no-member
             command_type='Connect',
             user_host__startswith=username + '@'
-        ).order_by('timestamp')
+        )
 
-        queries = MysqlLogLine.objects.filter(           #pylint: disable=no-member
+        queries = MysqlLogLine.objects.filter(  #pylint: disable=no-member
             command_type='Query',
             user_host__startswith=username + '@'
-        ).order_by('timestamp')
+        )
+
+        if from_date:
+            connections = connections.filter(timestamp__gte=from_date)
+            queries = queries.filter(timestamp__gte=from_date)
+        if to_date:
+            to_dt = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            connections = connections.filter(timestamp__lte=to_dt)
+            queries = queries.filter(timestamp__lte=to_dt)
+
+        if group_by == "session":
+            data = []
+            for conn in connections.order_by('timestamp'):
+                duration_seconds = int(conn.connection_duration.total_seconds()) if conn.connection_duration else 0
+                end_time = conn.timestamp + timedelta(seconds=duration_seconds)
+                queries_in_session = queries.filter(timestamp__gte=conn.timestamp, timestamp__lte=end_time)
+                data.append({
+                    "label": conn.timestamp.strftime("%Y-%m-%d %H:%M"),
+                    "duration": duration_seconds,
+                    "queries": queries_in_session.count()
+                })
+            return Response(data)
+
+        # Agrupación por día, semana o mes
+        if group_by == "day":
+            trunc = TruncDay("timestamp")
+            date_format = "%Y-%m-%d"
+        elif group_by == "week":
+            trunc = TruncWeek("timestamp")
+            date_format = "%Y-%m-%d"
+        elif group_by == "month":
+            trunc = TruncMonth("timestamp")
+            date_format = "%Y-%m"
+        else:
+            return Response({"error": "group_by inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Agregación de duración
+        connections_agg = (
+            connections
+            .annotate(period=trunc)
+            .values("period")
+            .annotate(duration=Sum("connection_duration"))
+            .order_by("period")
+        )
+
+        # Agregación de queries
+        queries_agg = (
+            queries
+            .annotate(period=trunc)
+            .values("period")
+            .annotate(queries=Count("id"))
+        )
+
+        # Crear mapa de queries
+        queries_map = { q["period"].strftime(date_format): q["queries"] for q in queries_agg }
 
         data = []
-        for conn in connections:
-            conn_time = conn.timestamp
-            duration_seconds = 0
-            if conn.connection_duration:
-                duration_seconds = int(conn.connection_duration.total_seconds())
-
-            end_time = conn_time + timedelta(seconds=duration_seconds)
-
-            # Contar queries dentro de esta sesión
-            queries_in_session = queries.filter(timestamp__gte=conn_time, timestamp__lte=end_time)
-
+        for c in connections_agg:
+            seconds = int(c["duration"].total_seconds()) if c["duration"] else 0
+            period_str = c["period"].strftime(date_format)
             data.append({
-                "sessionLabel": conn_time.strftime("%Y-%m-%d %H:%M"),
-                "duration": duration_seconds,
-                "queries": queries_in_session.count()
+                "label": period_str,
+                "duration": seconds,
+                "queries": queries_map.get(period_str, 0)
             })
 
         return Response(data)
-    
+
+
     @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)')
     def user_queries_summary(self, request, username=None):
 
