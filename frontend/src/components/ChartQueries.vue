@@ -6,7 +6,7 @@
       Cargando...
     </div>
 
-    <div v-if="!loading && queries.length === 0" class="text-gray-500 mt-2">
+    <div v-if="!loading && totalQueries === 0" class="text-gray-500 mt-2">
       No hay queries para mostrar.
     </div>
   </div>
@@ -45,9 +45,11 @@ export default defineComponent({
         await nextTick()
 
         renderChart(correctas, erroneas)
+        loading.value=false
       } catch (err) {
         console.error('Error cargando queries:', err)
-        queries.value = []
+        // queries.value = []
+        totalQueries.value=0
         loading.value = false
       }
     }
