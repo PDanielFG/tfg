@@ -47,6 +47,8 @@
         class="px-3 py-2 border rounded-lg bg-white shadow-sm focus:ring focus:ring-blue-300">
         <option value="az">Usuario A → Z</option>
         <option value="za">Usuario Z → A</option>
+        <option value="queries_desc">RANKING - Más consultas</option>
+        <option value="queries_asc">RANKING - Menos consultas</option>
         <option value="recent">Última conexión (más reciente)</option>
         <option value="oldest">Última conexión (más antigua)</option>
       </select>
@@ -70,10 +72,15 @@
           <!--Con router link hacemos toda la fila clickable, hacia la nueva vista, eliminamos la etiqeuta tr
           Con el parametro dinámico param, genera un endpoint nuevo usando el ednpoint que acabamos de crear en router index.js
           con name UserProfile/parametro dincamico-->
-          <router-link v-for="user in users" :key="user.user"
+          <router-link v-for="(user, index) in users" :key="user.user"
             :to="{ name: 'UserProfile', params: { username: user.user } }" class="flex hover:bg-gray-50 cursor-pointer"
             style="display: table-row;">
-            <td class="px-4 py-2 text-gray-700 text-center">{{ user.user }}</td>
+            <td class="px-4 py-2 text-gray-700 text-center">
+              <span v-if="isQueryRanking">
+                {{ getRanking(index) }}º -
+              </span>
+              {{ user.user }}
+            </td>
             <td class="px-4 py-2 text-gray-700 text-center">{{ user.connections_count }}</td>
             <td class="px-4 py-2 text-gray-700 text-center">{{ user.queries_count }}</td>
             <td class="px-4 py-2 text-gray-700 text-center">{{ formatDate(user.last_connected) }}</td>
@@ -107,6 +114,14 @@ export default {
   },
   created() {
     this.listarUsuarios();
+  },
+  computed: {
+    isQueryRanking() {
+      return (
+        this.sortOption === "queries_desc" ||
+        this.sortOption === "queries_asc"
+      );
+    }
   },
   methods: {
     async listarUsuarios() {
@@ -174,6 +189,10 @@ export default {
         this.users.sort((a, b) => new Date(b.last_connected) - new Date(a.last_connected));
       } else if (this.sortOption === "oldest") {
         this.users.sort((a, b) => new Date(a.last_connected) - new Date(b.last_connected));
+      } else if (this.sortOption === "queries_desc") {
+        this.users.sort((a, b) => b.queries_count - a.queries_count);
+      } else if (this.sortOption === "queries_asc") {
+        this.users.sort((a, b) => a.queries_count - b.queries_count);
       }
     },
     formatDate(dateStr) {
@@ -183,7 +202,11 @@ export default {
         timeStyle: 'medium',
         timeZone: 'UTC'   // Evita la conversión automática
       }).format(new Date(dateStr));
+    },
+    getRanking(index) {
+      return index + 1;
     }
+
 
   }
 }
