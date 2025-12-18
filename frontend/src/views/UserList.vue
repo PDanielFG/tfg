@@ -6,37 +6,37 @@
       {{ error }}
     </div>
 
-        <!-- ⭐ NUEVO: Filtros -->
+    <!-- ⭐ NUEVO: Filtros -->
     <div class="mb-6 flex flex-wrap items-end justify-center gap-4">
       <div>
         <label class="block text-sm font-semibold text-gray-700 font-semibold">Usuario</label>
-        <input
-          v-model="filterUsername"                 
-          @input="applyFilters"                   
-          type="text"
-          placeholder="Buscar usuario"
-          class="px-3 py-2 border rounded-lg shadow-sm focus:ring focus:ring-blue-300"
-        />
+        <input v-model="filterUsername" @input="applyFilters" type="text" placeholder="Buscar usuario"
+          class="px-3 py-2 border rounded-lg shadow-sm focus:ring focus:ring-blue-300" />
       </div>
 
       <div>
         <label class="block text-sm font-semibold text-gray-700 font-semibold">Desde</label>
-        <input
-          v-model="filterFromDate"                 
-          @change="applyFilters"                  
-          type="date"
-          class="px-3 py-2 border rounded-lg shadow-sm"
-        />
+        <input v-model="filterFromDate" @change="applyFilters" type="date"
+          class="px-3 py-2 border rounded-lg shadow-sm" />
       </div>
 
       <div>
         <label class="block text-sm font-semibold text-gray-700 font-semibold">Hasta</label>
-        <input
-          v-model="filterToDate"                  
-          @change="applyFilters"                  
-          type="date"
-          class="px-3 py-2 border rounded-lg shadow-sm"
-        />
+        <input v-model="filterToDate" @change="applyFilters" type="date"
+          class="px-3 py-2 border rounded-lg shadow-sm" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Últimos X días</label>
+        <input v-model.number="filterLastDays" @input="listarUsuarios" type="number" min="1" placeholder="Ej: 7"
+          class="px-3 py-2 border rounded-lg shadow-sm w-32" />
+      </div>
+
+      <!-- Filtrar por mínimo de consultas -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Mínimo consultas</label>
+        <input v-model.number="filterMinQueries" @input="applyFilters" type="number" min="1" placeholder="Ej: 5"
+          class="px-3 py-2 border rounded-lg shadow-sm w-32" />
       </div>
     </div>
 
@@ -61,6 +61,8 @@
         <thead class="bg-gray-50">
           <tr>
             <th class="w-1/2 px-4 py-3 text-center text-gray-600 font-semibold uppercase">Usuario</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Conexiones</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Consultas</th>
             <th class="w-1/2 px-4 py-3 text-center text-gray-600 font-semibold uppercase">Última Conexión</th>
           </tr>
         </thead>
@@ -68,8 +70,12 @@
           <!--Con router link hacemos toda la fila clickable, hacia la nueva vista, eliminamos la etiqeuta tr
           Con el parametro dinámico param, genera un endpoint nuevo usando el ednpoint que acabamos de crear en router index.js
           con name UserProfile/parametro dincamico-->
-          <router-link v-for="user in users" :key="user.user" :to="{ name: 'UserProfile', params: { username: user.user } }" class="flex hover:bg-gray-50 cursor-pointer" style="display: table-row;">
+          <router-link v-for="user in users" :key="user.user"
+            :to="{ name: 'UserProfile', params: { username: user.user } }" class="flex hover:bg-gray-50 cursor-pointer"
+            style="display: table-row;">
             <td class="px-4 py-2 text-gray-700 text-center">{{ user.user }}</td>
+            <td class="px-4 py-2 text-gray-700 text-center">{{ user.connections_count }}</td>
+            <td class="px-4 py-2 text-gray-700 text-center">{{ user.queries_count }}</td>
             <td class="px-4 py-2 text-gray-700 text-center">{{ formatDate(user.last_connected) }}</td>
           </router-link>
         </tbody>
@@ -93,7 +99,10 @@ export default {
 
       filterUsername: '',
       filterFromDate: '',
-      filterToDate: ''
+      filterToDate: '',
+
+      filterMinQueries: null,  // Número mínimo de consultas
+      filterLastDays: null     // Últimos X días
     }
   },
   created() {
@@ -102,10 +111,13 @@ export default {
   methods: {
     async listarUsuarios() {
       try {
-        const res = await getAPI.get('/api/logs/connected-users/');
+        const params = {};
+        if (this.filterLastDays) params.days = this.filterLastDays;
+
+        const res = await getAPI.get('/api/logs/connected-users-summary/', { params });
         console.log(res.data);
         this.usersOriginal = res.data.filter(user => user.user.toLowerCase() !== 'test');
-        
+
         this.applyFilters(); // ordenar automáticamente al cargar
 
       } catch (err) {
@@ -114,11 +126,11 @@ export default {
       }
     },
 
-        applyFilters() {
+    applyFilters() {
       let filtered = [...this.usersOriginal];
 
       // Filtro por nombre de usuario
-      if (this.filterUsername) {               
+      if (this.filterUsername) {
         const search = this.filterUsername.toLowerCase();
         filtered = filtered.filter(user =>
           user.user.toLowerCase().includes(search)
@@ -126,7 +138,7 @@ export default {
       }
 
       // Filtro por fecha desde
-      if (this.filterFromDate) {                
+      if (this.filterFromDate) {
         const from = new Date(this.filterFromDate);
         filtered = filtered.filter(user =>
           new Date(user.last_connected) >= from
@@ -134,7 +146,7 @@ export default {
       }
 
       // Filtro por fecha hasta
-      if (this.filterToDate) {                 
+      if (this.filterToDate) {
         const to = new Date(this.filterToDate);
         to.setHours(23, 59, 59, 999);
         filtered = filtered.filter(user =>
@@ -142,8 +154,14 @@ export default {
         );
       }
 
+      if (this.filterMinQueries) {
+        filtered = filtered.filter(user =>
+          user.queries_count >= this.filterMinQueries
+        );
+      }
+
       this.users = filtered;
-      this.sortUsers();                         
+      this.sortUsers();
     },
 
     // Método para ordenar usuarios
@@ -159,12 +177,12 @@ export default {
       }
     },
     formatDate(dateStr) {
-    if (!dateStr) return '-';
-    return new Intl.DateTimeFormat('es-ES', {
-      dateStyle: 'short',
-      timeStyle: 'medium',
-      timeZone: 'UTC'   // Evita la conversión automática
-    }).format(new Date(dateStr));
+      if (!dateStr) return '-';
+      return new Intl.DateTimeFormat('es-ES', {
+        dateStyle: 'short',
+        timeStyle: 'medium',
+        timeZone: 'UTC'   // Evita la conversión automática
+      }).format(new Date(dateStr));
     }
 
   }

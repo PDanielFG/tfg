@@ -76,29 +76,31 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
             status=status.HTTP_200_OK
         )
     
-    @action(detail=False, methods=['get'], url_path='connected-users')
-    def connected_users(self, request):
-        """
-        Devuelve los usuarios únicos que se han conectado, con la última conexión.
-        """
-        users = (
-            MysqlLogLine.objects  # pylint: disable=no-member
-            .filter(command_type='Connect', user_host__isnull=False)
-            .values('user_host')    #Selecciona solo la columna de la bd user_host root@localhost o ana@localhost
-            .annotate(last_connected=Max('timestamp'))  #campo extra calculado, con la ultima fecha de conexion
-            .order_by('user_host')  #ordena en funcion del noombre
-        )
+    #En desuso, por el endpoint connected_users_summary
 
-        #Para extraer solo el usuario, en vez de usuario@host
-        result = [
-            {
-                'user': u['user_host'].split('@')[0],  # solo la parte antes de @
-                'last_connected': u['last_connected']
-            }
-            for u in users
-        ]
+    # @action(detail=False, methods=['get'], url_path='connected-users')
+    # def connected_users(self, request):
+    #     """
+    #     Devuelve los usuarios únicos que se han conectado, con la última conexión.
+    #     """
+    #     users = (
+    #         MysqlLogLine.objects  # pylint: disable=no-member
+    #         .filter(command_type='Connect', user_host__isnull=False)
+    #         .values('user_host')    #Selecciona solo la columna de la bd user_host root@localhost o ana@localhost
+    #         .annotate(last_connected=Max('timestamp'))  #campo extra calculado, con la ultima fecha de conexion
+    #         .order_by('user_host')  #ordena en funcion del noombre
+    #     )
 
-        return Response(result)
+    #     #Para extraer solo el usuario, en vez de usuario@host
+    #     result = [
+    #         {
+    #             'user': u['user_host'].split('@')[0],  # solo la parte antes de @
+    #             'last_connected': u['last_connected']
+    #         }
+    #         for u in users
+    #     ]
+
+    #     return Response(result)
     
     #Aqui si se usa el serializdor porque nos interesa devolver todos los campos, y luego seleccionar en el frontend
     #cual mostramos
@@ -351,3 +353,80 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
 
         data=serialized_data
         return Response({"queries": data})
+    
+
+    #Endpoint para el filtro de la pregunta de 
+    # "Cuantos usuarios han hecho X consultas en X dias?"
+    @action(detail=False, methods=['get'], url_path='connected-users-summary')
+    def connected_users_summary(self, request):
+        """
+        Devuelve usuarios con:
+        - última conexión
+        - número de consultas
+        - número de conexiones
+        Permite filtrar por últimos X días (?days=7)
+        """
+
+        # Parámetro opcional ?days=7
+        #Con esta modificación, al hacer hace X dias, incluye el dia entero, antes era dia y hora.
+        #Hace 7 dias, el jueves pasado desde las 00:00 en vez desde las 19:01
+        days = request.query_params.get("days")
+        from_date = None
+
+        if days:
+            from_date = (
+                datetime.now() - timedelta(days=int(days))
+            ).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # ---------------------------
+        # Conexiones (última conexión + cantidad)
+        # ---------------------------
+        connections = MysqlLogLine.objects.filter(      #pylint: disable=no-member
+            command_type='Connect',
+            user_host__isnull=False
+        )
+        if from_date:
+            connections = connections.filter(timestamp__gte=from_date)
+
+        connections = (
+            connections
+            .values('user_host')
+            .annotate(
+                last_connected=Max('timestamp'),
+                connections_count=Count('id')   # ← aquí agregamos conteo de conexiones
+            )
+        )
+
+        # ---------------------------
+        # Queries (conteo por usuario)
+        # ---------------------------
+        queries = MysqlLogLine.objects.filter(      #pylint: disable=no-member
+            command_type='Query',
+            user_host__isnull=False
+        )
+        if from_date:
+            queries = queries.filter(timestamp__gte=from_date)
+
+        queries = (
+            queries
+            .values('user_host')
+            .annotate(queries_count=Count('id'))
+        )
+
+        # Crear un mapa de username → queries_count
+        queries_map = {q['user_host'].split('@')[0]: q['queries_count'] for q in queries}
+
+        # ---------------------------
+        # Construir resultado final
+        # ---------------------------
+        result = []
+        for c in connections:
+            username = c['user_host'].split('@')[0]
+            result.append({
+                "user": username,
+                "last_connected": c['last_connected'],
+                "connections_count": c['connections_count'],  # nuevo campo
+                "queries_count": queries_map.get(username, 0)
+            })
+
+        return Response(result)
