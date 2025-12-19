@@ -24,6 +24,11 @@
         <option value="CREATE TABLE">CREATE TABLE</option>
         <option value="SUBQUERY_NESTED">Subconsulta anidada</option>
         <option value="SUBQUERY_CORRELATED">Subconsulta correlacionada</option>
+        <option value="JOIN">JOIN</option>
+        <option value="JOIN_IMPLICIT">JOIN implícito</option>
+        <option value="GROUP_BY">GROUP BY / HAVING</option>
+        <option value="ORDER_BY">ORDER BY</option>
+        <option value="AGGREGATE">Funciones agregadas</option>
       </select>
     </div>
 
@@ -120,11 +125,11 @@ export default {
           user: res.data.user,
           last_connected: res.data.last_connected
         };
-        this.queriesOriginal = res.data.queries; 
-        this.queries = [...this.queriesOriginal]; 
+        this.queriesOriginal = res.data.queries;
+        this.queries = [...this.queriesOriginal];
         this.conexiones = res.data.connections; //Llamamos a connections en vez de conexiones porque connections en la propiedad del backend, del diccionario
 
-        this.applyQueryFilter(); 
+        this.applyQueryFilter();
 
       })
       .catch(() => {
@@ -153,37 +158,68 @@ export default {
     applyQueryFilter() {
       let filtered = [...this.queriesOriginal];
 
-      if (this.filterQueryType) {
-        filtered = filtered.filter(q => {
-          const queryUpper = (q.query || "").toUpperCase();
-
-          if (this.filterQueryType === "SELECT") {
-            return queryUpper.startsWith("SELECT") && !this.isSubquery(queryUpper);
-          }
-          if (this.filterQueryType === "INSERT") return queryUpper.startsWith("INSERT");
-          if (this.filterQueryType === "CREATE TABLE") return queryUpper.startsWith("CREATE TABLE");
-          if (this.filterQueryType === "SUBQUERY_NESTED") return this.isNestedSubquery(queryUpper);
-          if (this.filterQueryType === "SUBQUERY_CORRELATED") return this.isCorrelatedSubquery(queryUpper);
-
-          return true;
-        });
+      if (!this.filterQueryType) {
+        this.queries = filtered;
+        return;
       }
+
+      filtered = filtered.filter(q => {
+        const sql = (q.query || "").toUpperCase();
+
+        switch (this.filterQueryType) {
+          case "SELECT":
+            return sql.startsWith("SELECT");
+
+          case "INSERT":
+            return sql.startsWith("INSERT");
+
+          case "CREATE TABLE":
+            return sql.startsWith("CREATE TABLE");
+
+          case "SUBQUERY_NESTED":
+            return this.isNestedSubquery(sql);
+
+          case "SUBQUERY_CORRELATED":
+            return this.isCorrelatedSubquery(sql);
+
+          // ⭐ NUEVOS FILTROS
+          case "JOIN":
+            return /\bJOIN\b/.test(sql);
+
+          case "JOIN_IMPLICIT":
+            return /\bFROM\b\s+\w+\s*,\s*\w+/.test(sql) && !/\bJOIN\b/.test(sql);
+
+          case "GROUP_BY":
+            return /\bGROUP BY\b/.test(sql) || /\bHAVING\b/.test(sql);
+
+          case "ORDER_BY":
+            return /\bORDER BY\b/.test(sql);
+
+          case "AGGREGATE":
+            return /\b(SUM|COUNT|AVG|MIN|MAX)\s*\(/.test(sql);
+
+          default:
+            return true;
+        }
+      });
 
       this.queries = filtered;
     },
 
-    // ⭐ NUEVO: helpers para subconsultas
     isSubquery(query) {
       return /\(\s*SELECT\s+/i.test(query); // Detecta subconsultas
     },
 
     isNestedSubquery(query) {
-      return /\(\s*SELECT\s+.*\)/i.test(query); // Subconsulta anidada simple
+      // SELECT dentro de paréntesis **sin referencia a tabla externa**
+      return /\(\s*SELECT\s+[^)]*(?<!\.\w+)\)/i.test(query);
     },
 
     isCorrelatedSubquery(query) {
-      return /\(\s*SELECT\s+.*FROM\s+\w+\s+.*\.\w+/i.test(query); // Subconsulta correlacionada simplificada
+          // SELECT dentro de paréntesis que sí referencia tabla externa (tabla.col)
+          return /\(\s*SELECT\s+.*\.\w+/i.test(query);
     }
+
   }
 }
 </script>
