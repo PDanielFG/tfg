@@ -6,7 +6,6 @@
       {{ error }}
     </div>
 
-    <!-- ⭐ NUEVO: Filtros -->
     <div class="mb-6 flex flex-wrap items-end justify-center gap-4">
       <div>
         <label class="block text-sm font-semibold text-gray-700 font-semibold">Usuario</label>
@@ -58,6 +57,35 @@
       No hay usuarios conectados.
     </div>
 
+    <div class="mb-4 text-center text-gray-700">
+      <span class="font-semibold">
+        Usuarios totales:
+      </span>
+      {{ totalUsers }}
+
+      <span v-if="totalFilteredUsers !== totalUsers" class="ml-4 text-gray-500">
+        (Mostrando {{ totalFilteredUsers }} tras filtros)
+      </span>
+    </div>
+
+
+    <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 py-4">
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50" :disabled="currentPage === 1"
+        @click="currentPage--">
+        Anterior
+      </button>
+
+      <span class="font-semibold">
+        Página {{ currentPage }} de {{ totalPages }}
+      </span>
+
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+        :disabled="currentPage === totalPages" @click="currentPage++">
+        Siguiente
+      </button>
+    </div>
+
+
     <div v-if="users.length" class="overflow-x-auto bg-white rounded-lg shadow">
       <table class="min-w-full table-fixed divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -72,12 +100,12 @@
           <!--Con router link hacemos toda la fila clickable, hacia la nueva vista, eliminamos la etiqeuta tr
           Con el parametro dinámico param, genera un endpoint nuevo usando el ednpoint que acabamos de crear en router index.js
           con name UserProfile/parametro dincamico-->
-          <router-link v-for="(user, index) in users" :key="user.user"
+          <router-link v-for="(user, index) in paginatedUsers" :key="user.user"
             :to="{ name: 'UserProfile', params: { username: user.user } }" class="flex hover:bg-gray-50 cursor-pointer"
             style="display: table-row;">
             <td class="px-4 py-2 text-gray-700 text-center">
               <span v-if="isQueryRanking">
-                {{ getRanking(index) }}º -
+                {{ getRanking((currentPage - 1) * pageSize + index) }}º -
               </span>
               {{ user.user }}
             </td>
@@ -87,6 +115,23 @@
           </router-link>
         </tbody>
       </table>
+
+      <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 py-4">
+        <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          :disabled="currentPage === 1" @click="currentPage--">
+          Anterior
+        </button>
+
+        <span class="font-semibold">
+          Página {{ currentPage }} de {{ totalPages }}
+        </span>
+
+        <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          :disabled="currentPage === totalPages" @click="currentPage++">
+          Siguiente
+        </button>
+      </div>
+
     </div>
   </div>
 </template>
@@ -109,7 +154,10 @@ export default {
       filterToDate: '',
 
       filterMinQueries: null,  // Número mínimo de consultas
-      filterLastDays: null     // Últimos X días
+      filterLastDays: null,     // Últimos X días
+
+      currentPage: 1,
+      pageSize: 25
     }
   },
   created() {
@@ -121,6 +169,22 @@ export default {
         this.sortOption === "queries_desc" ||
         this.sortOption === "queries_asc"
       );
+    },
+    totalUsers() {
+      return this.usersOriginal.length;
+    },
+
+    totalFilteredUsers() {
+      return this.users.length;
+    },
+    paginatedUsers() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
+      return this.users.slice(start, end);
+    },
+
+    totalPages() {
+      return Math.ceil(this.users.length / this.pageSize);
     }
   },
   methods: {
@@ -177,6 +241,7 @@ export default {
 
       this.users = filtered;
       this.sortUsers();
+      this.currentPage = 1;
     },
 
     // Método para ordenar usuarios
