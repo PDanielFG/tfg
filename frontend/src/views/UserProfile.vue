@@ -32,6 +32,22 @@
       </select>
     </div>
 
+    <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 py-4">
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50" :disabled="currentPage === 1"
+        @click="currentPage--">
+        Anterior
+      </button>
+
+      <span class="font-semibold">
+        Página {{ currentPage }} de {{ totalPages }}
+      </span>
+
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+        :disabled="currentPage === totalPages" @click="currentPage++">
+        Siguiente
+      </button>
+    </div>
+
     <div v-if="queries.length === 0" class="mt-2 text-gray-600">
       Este usuario no tiene queries registradas.
     </div>
@@ -49,7 +65,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-          <tr v-for="q in queries" :key="q.id" :class="{
+          <tr v-for="q in paginatedQueries" :key="q.id" :class="{
             'hover:bg-gray-50': true,
             'bg-red-100 text-red-800': q.was_error === true,
             'bg-green-100 text-green-800': q.was_error === false
@@ -65,6 +81,22 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 py-4">
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50" :disabled="currentPage === 1"
+        @click="currentPage--">
+        Anterior
+      </button>
+
+      <span class="font-semibold">
+        Página {{ currentPage }} de {{ totalPages }}
+      </span>
+
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+        :disabled="currentPage === totalPages" @click="currentPage++">
+        Siguiente
+      </button>
     </div>
 
     <h2 class="text-xl font-semibold mt-6 mb-4">Conexiones realizadas:</h2>
@@ -108,10 +140,13 @@ export default {
     return {
       usuario: {},
       queries: [],
-      queriesOriginal: [], // ⭐ NUEVO: guardar todas las queries originales
+      queriesOriginal: [],
       conexiones: [],
       error: null,
       filterQueryType: "",
+
+      currentPage: 1,
+      pageSize: 25
 
     };
   },
@@ -136,6 +171,18 @@ export default {
         this.error = "No se pudieron cargar los datos del usuario";
       });
   },
+  computed: {
+    paginatedQueries() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
+      return this.queries.slice(start, end);
+    },
+
+    totalPages() {
+      return Math.ceil(this.queries.length / this.pageSize);
+    }
+  },
+
 
   methods: {
     formatDate(dateStr) {
@@ -204,6 +251,7 @@ export default {
       });
 
       this.queries = filtered;
+      this.currentPage = 1;
     },
 
     isSubquery(query) {
@@ -216,8 +264,8 @@ export default {
     },
 
     isCorrelatedSubquery(query) {
-          // SELECT dentro de paréntesis que sí referencia tabla externa (tabla.col)
-          return /\(\s*SELECT\s+.*\.\w+/i.test(query);
+      // SELECT dentro de paréntesis que sí referencia tabla externa (tabla.col)
+      return /\(\s*SELECT\s+.*\.\w+/i.test(query);
     }
 
   }
