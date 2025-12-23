@@ -229,12 +229,15 @@ export default {
           case "SUBQUERY_CORRELATED":
             return this.isCorrelatedSubquery(sql);
 
-          // ⭐ NUEVOS FILTROS
           case "JOIN":
             return /\bJOIN\b/.test(sql);
 
           case "JOIN_IMPLICIT":
-            return /\bFROM\b\s+\w+\s*,\s*\w+/.test(sql) && !/\bJOIN\b/.test(sql);
+            return (
+              /\bFROM\b[\s\S]*?,[\s\S]*?\bWHERE\b/.test(sql) &&
+              !/\bJOIN\b/.test(sql)
+            );
+
 
           case "GROUP_BY":
             return /\bGROUP BY\b/.test(sql) || /\bHAVING\b/.test(sql);
