@@ -15,9 +15,31 @@
       Queries realizadas: <span class="text-gray-600">{{ queries.length }}</span>
     </h2>
 
+    <div class="mb-6 flex flex-wrap items-end justify-center gap-6">
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Desde</label>
+        <input v-model="filterFromDate" @change="applyAllFilters" type="date"
+          class="px-3 py-2 border rounded-lg shadow-sm" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Hasta</label>
+        <input v-model="filterToDate" @change="applyAllFilters" type="date"
+          class="px-3 py-2 border rounded-lg shadow-sm" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Últimos X días</label>
+        <input v-model.number="filterLastDays" @input="applyAllFilters" type="number" min="1" placeholder="Ej: 7"
+          class="px-3 py-2 border rounded-lg shadow-sm w-32" />
+      </div>
+    </div>
+
+
     <div class="mb-4">
       <label class="block text-sm font-semibold text-gray-700">Tipo de consulta</label>
-      <select v-model="filterQueryType" @change="applyQueryFilter" class="px-3 py-2 border rounded-lg shadow-sm">
+      <select v-model="filterQueryType" @change="applyAllFilters" class="px-3 py-2 border rounded-lg shadow-sm">
         <option value="">Todas</option>
         <option value="SELECT">SELECT</option>
         <option value="INSERT">INSERT</option>
@@ -145,6 +167,10 @@ export default {
       error: null,
       filterQueryType: "",
 
+      filterFromDate: "",
+      filterToDate: "",
+      filterLastDays: null,
+
       currentPage: 1,
       pageSize: 25
 
@@ -164,7 +190,7 @@ export default {
         this.queries = [...this.queriesOriginal];
         this.conexiones = res.data.connections; //Llamamos a connections en vez de conexiones porque connections en la propiedad del backend, del diccionario
 
-        this.applyQueryFilter();
+        this.applyAllFilters();
 
       })
       .catch(() => {
@@ -185,6 +211,62 @@ export default {
 
 
   methods: {
+    applyAllFilters() {
+      let filtered = [...this.queriesOriginal];
+
+      const now = new Date();
+
+      // Últimos X días
+      if (this.filterLastDays) {
+        const from = new Date();
+        from.setDate(now.getDate() - this.filterLastDays);
+        filtered = filtered.filter(q =>
+          new Date(q.timestamp) >= from
+        );
+      }
+
+      // Desde
+      if (this.filterFromDate) {
+        const from = new Date(this.filterFromDate);
+        filtered = filtered.filter(q =>
+          new Date(q.timestamp) >= from
+        );
+      }
+
+      // Hasta
+      if (this.filterToDate) {
+        const to = new Date(this.filterToDate);
+        to.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(q =>
+          new Date(q.timestamp) <= to
+        );
+      }
+
+      // Tipo de consulta (tu lógica actual)
+      if (this.filterQueryType) {
+        filtered = filtered.filter(q => {
+          const sql = (q.query || "").toUpperCase();
+
+          switch (this.filterQueryType) {
+            case "SELECT": return sql.startsWith("SELECT");
+            case "INSERT": return sql.startsWith("INSERT");
+            case "CREATE TABLE": return sql.startsWith("CREATE TABLE");
+            case "SUBQUERY_NESTED": return this.isNestedSubquery(sql);
+            case "SUBQUERY_CORRELATED": return this.isCorrelatedSubquery(sql);
+            case "JOIN": return /\bJOIN\b/.test(sql);
+            case "JOIN_IMPLICIT":
+              return /\bFROM\b[\s\S]*?,[\s\S]*?\bWHERE\b/.test(sql) && !/\bJOIN\b/.test(sql);
+            case "GROUP_BY": return /\bGROUP BY\b/.test(sql) || /\bHAVING\b/.test(sql);
+            case "ORDER_BY": return /\bORDER BY\b/.test(sql);
+            case "AGGREGATE": return /\b(SUM|COUNT|AVG|MIN|MAX)\s*\(/.test(sql);
+            default: return true;
+          }
+        });
+      }
+
+      this.queries = filtered;
+      this.currentPage = 1;
+    },
     formatDate(dateStr) {
       if (!dateStr) return '-';
       return new Intl.DateTimeFormat('es-ES', {
@@ -197,80 +279,17 @@ export default {
     formatDuration(duration) {
       if (!duration) return '-';
 
-      // duration viene como "HH:MM:SS" desde Django
       const [h, m, s] = duration.split(':');
       return `${h}h ${m}m ${s}s`;
     },
 
-    applyQueryFilter() {
-      let filtered = [...this.queriesOriginal];
-
-      if (!this.filterQueryType) {
-        this.queries = filtered;
-        return;
-      }
-
-      filtered = filtered.filter(q => {
-        const sql = (q.query || "").toUpperCase();
-
-        switch (this.filterQueryType) {
-          case "SELECT":
-            return sql.startsWith("SELECT");
-
-          case "INSERT":
-            return sql.startsWith("INSERT");
-
-          case "CREATE TABLE":
-            return sql.startsWith("CREATE TABLE");
-
-          case "SUBQUERY_NESTED":
-            return this.isNestedSubquery(sql);
-
-          case "SUBQUERY_CORRELATED":
-            return this.isCorrelatedSubquery(sql);
-
-          case "JOIN":
-            return /\bJOIN\b/.test(sql);
-
-          case "JOIN_IMPLICIT":
-            return (
-              /\bFROM\b[\s\S]*?,[\s\S]*?\bWHERE\b/.test(sql) &&
-              !/\bJOIN\b/.test(sql)
-            );
-
-
-          case "GROUP_BY":
-            return /\bGROUP BY\b/.test(sql) || /\bHAVING\b/.test(sql);
-
-          case "ORDER_BY":
-            return /\bORDER BY\b/.test(sql);
-
-          case "AGGREGATE":
-            return /\b(SUM|COUNT|AVG|MIN|MAX)\s*\(/.test(sql);
-
-          default:
-            return true;
-        }
-      });
-
-      this.queries = filtered;
-      this.currentPage = 1;
-    },
-
-    isSubquery(query) {
-      return /\(\s*SELECT\s+/i.test(query); // Detecta subconsultas
-    },
-
     isNestedSubquery(query) {
-      // SELECT dentro de paréntesis **sin referencia a tabla externa**
       return /\(\s*SELECT\s+[^)]*(?<!\.\w+)\)/i.test(query);
     },
 
     isCorrelatedSubquery(query) {
-      // SELECT dentro de paréntesis que sí referencia tabla externa (tabla.col)
       return /\(\s*SELECT\s+.*\.\w+/i.test(query);
     }
-
   }
 }
 </script>
