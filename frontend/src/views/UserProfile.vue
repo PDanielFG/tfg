@@ -220,6 +220,7 @@ export default {
       if (this.filterLastDays) {
         const from = new Date();
         from.setDate(now.getDate() - this.filterLastDays);
+        from.setHours(0, 0, 0, 0);
         filtered = filtered.filter(q =>
           new Date(q.timestamp) >= from
         );
