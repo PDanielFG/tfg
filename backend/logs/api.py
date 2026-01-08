@@ -8,6 +8,13 @@ from datetime import datetime, timedelta
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 
+import csv  # para poder usar csv.writer
+from django.http import HttpResponse  # para poder devolver HttpResponse
+from django.db.models import Count, Q  # para Count y Q
+from .models import MysqlLogLine  # o la ruta correcta a tu modelo
+
+
+
 
 
 
@@ -16,6 +23,9 @@ from rest_framework import viewsets, permissions
 from .serializers import LogSerializer
 from .parser import parse_mysql_log     #Poner . para referirnos al archivo
 from django.db.models import Max
+from .utils import queryset_to_csv_response
+
+
 
 class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
     
@@ -430,3 +440,75 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
             })
 
         return Response(result)
+    
+    @action(detail=False, methods=["get"], url_path="export/csv")
+    def export_all_csv(self, request):
+        logs = MysqlLogLine.objects.all()
+
+        fields = [
+            "timestamp",
+            "thread_id",
+            "user_host",
+            "command_type",
+            "sql_type",
+            "is_complex",
+            "was_error",
+            "syntax_error",
+            "logic_error",
+            "error_message",
+            "query",
+        ]
+
+        return queryset_to_csv_response(
+            logs,
+            fields,
+            filename="mysql_logs.csv"
+        )
+    
+    @action(detail=False, methods=["get"], url_path="user/(?P<username>[^/.]+)/export/csv")
+    def export_user_csv(self, request, username=None):
+        logs = MysqlLogLine.objects.filter(
+            user_host__startswith=username + "@"
+        )
+
+        fields = [
+            "timestamp",
+            "command_type",
+            "sql_type",
+            "query",
+            "is_complex",
+            "was_error",
+            "syntax_error",
+            "logic_error",
+        ]
+
+        return queryset_to_csv_response(
+            logs,
+            fields,
+            filename=f"{username}_logs.csv"
+        )
+
+    @action(detail=False, methods=["get"], url_path="stats/errors/csv")
+    def export_errors_summary_csv(self, request):
+        data = (
+            MysqlLogLine.objects
+            .filter(command_type="Query")
+            .values("user_host")
+            .annotate(
+                syntax_errors=Count("id", filter=Q(syntax_error=True)),
+                logic_errors=Count("id", filter=Q(logic_error=True)),
+            )
+        )
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="errors_summary.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(["user", "syntax_errors", "logic_errors"])
+
+        for row in data:
+            user = row["user_host"].split("@")[0]
+            writer.writerow([user, row["syntax_errors"], row["logic_errors"]])
+
+        return response
+

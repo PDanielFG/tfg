@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import UploadFile from '@/components/UploadFile.vue'
 import UserProfile from '@/views/UserProfile.vue'
 import QueryList from '../views/QueryList.vue'
+import UserList from '@/views/UserList.vue'
 
 const routes = [
   {
@@ -15,9 +16,10 @@ const routes = [
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
-    component: function () {
-      return import('../views/UserList.vue')
-    }
+    // component: function () {
+    //   return import('../views/UserList.vue')
+    // }
+    component: UserList
   },
   {
     path: '/queryList',

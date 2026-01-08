@@ -1,6 +1,10 @@
 <template>
   <div class="p-6 bg-gray-100 min-h-screen">
     <h2 class="text-3xl font-bold mb-6 text-gray-800">Usuarios Conectados</h2>
+    <button @click="downloadCSV"
+      class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+      ⬇ Descargar CSV
+    </button>
 
     <div v-if="error" class="mb-4 p-2 bg-red-100 text-red-700 rounded">
       {{ error }}
@@ -157,7 +161,10 @@ export default {
       filterLastDays: null,     // Últimos X días
 
       currentPage: 1,
-      pageSize: 25
+      pageSize: 25,
+
+      csvUrl: (process.env.VUE_APP_API_URL || "http://localhost:8000") + "/api/logs/export/csv",
+
     }
   },
   created() {
@@ -270,7 +277,12 @@ export default {
     },
     getRanking(index) {
       return index + 1;
+    },
+
+    downloadCSV() {
+      window.open(this.csvUrl, "_blank");
     }
+
 
 
   }
