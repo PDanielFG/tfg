@@ -141,7 +141,9 @@ export default defineComponent({
                     data: finalData.value.map(e => e.duration),
                     backgroundColor: "#3498db",
                     yAxisID: "y",
-                    order: 1
+                    order: 1,
+                    barPercentage: 1,
+                    categoyPercentage: 0.8
                 },
                 {
                     type: "bar",
@@ -149,7 +151,9 @@ export default defineComponent({
                     data: finalData.value.map(e => e.queries_correct),
                     backgroundColor: "#2ecc71",
                     yAxisID: "y2",
-                    order: 2
+                    order: 2,
+                    barPercentage: 1,
+                    categoyPercentage: 0.8
                 },
                 {
                     type: "bar",
@@ -157,7 +161,9 @@ export default defineComponent({
                     data: finalData.value.map(e => e.queries_incorrect),
                     backgroundColor: "#e74c3c",
                     yAxisID: "y2",
-                    order: 3
+                    order: 3,
+                    barPercentage: 1,
+                    categoyPercentage: 0.8
                 },
                 {
                     type: "line",
@@ -192,7 +198,10 @@ export default defineComponent({
                     title: { display: true, text: "Número de queries" },
                     grid: { drawOnChartArea: false }
                 },
-                x: { title: { display: true, text: "Sesiones" } }
+                x: { 
+                    title: { display: true, text: "Sesiones" },
+                    stacked: false, 
+                }
             },
             plugins: {
                 tooltip: {
