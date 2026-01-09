@@ -273,10 +273,15 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
                 duration_seconds = int(conn.connection_duration.total_seconds()) if conn.connection_duration else 0
                 end_time = conn.timestamp + timedelta(seconds=duration_seconds)
                 queries_in_session = queries.filter(timestamp__gte=conn.timestamp, timestamp__lte=end_time)
+                queries_ok = queries_in_session.filter(was_error=False).count()
+                queries_error = queries_in_session.filter(was_error=True).count()
+
                 data.append({
                     "label": conn.timestamp.strftime("%Y-%m-%d %H:%M"),
                     "duration": duration_seconds,
-                    "queries": queries_in_session.count()
+                    "queries": queries_in_session.count(),
+                    "queries_ok": queries_ok,
+                    "queries_error": queries_error
                 })
             return Response(data)
 

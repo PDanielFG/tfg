@@ -34,6 +34,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -42,12 +44,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 #Permitimos la conexión
 CORS_ORIGIN_WHITELIST = [
-    'http://localhsot:8000',
+    'http://localhost:8000',
     'http://127.0.0.1:8000',
 
     'http://localhost:8080',    #vue. A través de vue accederemos a la app de vue
