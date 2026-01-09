@@ -241,7 +241,7 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         })
     
     
-    #Grafico de duracion de conexion de sesion, y queries por sesion
+    # Gráfico de duración de conexión de sesión y queries por sesión
     @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)/sessions-summary')
     def user_sessions_summary(self, request, username=None):
         group_by = request.query_params.get("group_by", "session")
@@ -249,16 +249,16 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         to_date = request.query_params.get("to")
 
         # Filtrar conexiones y queries del usuario
-        connections = MysqlLogLine.objects.filter(  #pylint: disable=no-member
+        connections = MysqlLogLine.objects.filter(
             command_type='Connect',
             user_host__startswith=username + '@'
         )
-
-        queries = MysqlLogLine.objects.filter(  #pylint: disable=no-member
+        queries = MysqlLogLine.objects.filter(
             command_type='Query',
             user_host__startswith=username + '@'
         )
 
+        # Filtrar por rango de fechas
         if from_date:
             connections = connections.filter(timestamp__gte=from_date)
             queries = queries.filter(timestamp__gte=from_date)
@@ -267,12 +267,22 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
             connections = connections.filter(timestamp__lte=to_dt)
             queries = queries.filter(timestamp__lte=to_dt)
 
+        # --------------------------
+        # Agrupación por sesión
+        # --------------------------
         if group_by == "session":
             data = []
             for conn in connections.order_by('timestamp'):
+                # Duración de la sesión
                 duration_seconds = int(conn.connection_duration.total_seconds()) if conn.connection_duration else 0
                 end_time = conn.timestamp + timedelta(seconds=duration_seconds)
-                queries_in_session = queries.filter(timestamp__gte=conn.timestamp, timestamp__lte=end_time)
+
+                # Queries estrictamente dentro de la sesión y rango de fechas
+                queries_in_session = queries.filter(
+                    timestamp__gte=conn.timestamp,
+                    timestamp__lte=end_time
+                )
+
                 queries_ok = queries_in_session.filter(was_error=False).count()
                 queries_error = queries_in_session.filter(was_error=True).count()
 
@@ -280,12 +290,14 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
                     "label": conn.timestamp.strftime("%Y-%m-%d %H:%M"),
                     "duration": duration_seconds,
                     "queries": queries_in_session.count(),
-                    "queries_ok": queries_ok,
-                    "queries_error": queries_error
+                    "queries_correct": queries_ok,
+                    "queries_incorrect": queries_error
                 })
             return Response(data)
 
+        # --------------------------
         # Agrupación por día, semana o mes
+        # --------------------------
         if group_by == "day":
             trunc = TruncDay("timestamp")
             date_format = "%Y-%m-%d"
@@ -312,23 +324,33 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
             queries
             .annotate(period=trunc)
             .values("period")
-            .annotate(queries=Count("id"))
+            .annotate(
+                queries_total=Count("id"),
+                queries_correct=Count("id", filter=Q(was_error=False)),
+                queries_incorrect=Count("id", filter=Q(was_error=True))
+            )
         )
 
-        # Crear mapa de queries
-        queries_map = { q["period"].strftime(date_format): q["queries"] for q in queries_agg }
+        # Crear mapa completo
+        queries_map = { q["period"].strftime(date_format): q for q in queries_agg }
 
+        # Construir lista final
         data = []
         for c in connections_agg:
             seconds = int(c["duration"].total_seconds()) if c["duration"] else 0
             period_str = c["period"].strftime(date_format)
+            q_info = queries_map.get(period_str, {"queries_correct":0, "queries_incorrect":0, "queries_total":0})
+
             data.append({
                 "label": period_str,
                 "duration": seconds,
-                "queries": queries_map.get(period_str, 0)
+                "queries": q_info["queries_total"],
+                "queries_correct": q_info["queries_correct"],
+                "queries_incorrect": q_info["queries_incorrect"]
             })
 
         return Response(data)
+
 
 
     @action(detail=False, methods=['get'], url_path='user/(?P<username>[^/.]+)')
