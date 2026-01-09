@@ -443,27 +443,53 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
     
     @action(detail=False, methods=["get"], url_path="export/csv")
     def export_all_csv(self, request):
-        logs = MysqlLogLine.objects.all()
+        logs = MysqlLogLine.objects.exclude(user_host="test@localhost")
 
         fields = [
             "timestamp",
-            "thread_id",
             "user_host",
             "command_type",
-            "sql_type",
-            "is_complex",
+            "query",
             "was_error",
+            "error_message",
             "syntax_error",
             "logic_error",
-            "error_message",
-            "query",
+
+            "sql_type",
+            "is_complex",
+            "thread_id",
         ]
 
-        return queryset_to_csv_response(
-            logs,
-            fields,
-            filename="mysql_logs.csv"
-        )
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="mysql_logs.csv"'
+
+        writer = csv.writer(response)
+
+        # Cabecera
+        writer.writerow(fields)
+
+        # Campos de texto a limpiar
+        text_fields = {"query", "error_message"}
+
+        for log in logs:
+            row = []
+            for field in fields:
+                value = getattr(log, field, "")
+
+                # 🔥 LIMPIEZA DE SALTOS DE LÍNEA
+                if field in text_fields and value:
+                    value = str(value).replace("\r", " ").replace("\n", " ")
+
+                if field == "timestamp" and value:
+                    # Convertir a string sin zona horaria
+                    value = value.strftime("%Y-%m-%d %H:%M:%S")
+
+                row.append(value)
+
+            writer.writerow(row)
+
+        return response
+
     
     @action(detail=False, methods=["get"], url_path="user/(?P<username>[^/.]+)/export/csv")
     def export_user_csv(self, request, username=None):
