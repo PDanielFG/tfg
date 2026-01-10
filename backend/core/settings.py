@@ -82,16 +82,28 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
+
+    #Donde almacenamos nuestros modelos 
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     },
+
+    #Conexión extra para verificar el nombre de las tablas
+    #Para hacer que funcione desde la cmd con mysql -u test -p -h localhost descomentar lo de arriba, para docker lo de abajo 
     'mysql_logs': {  # MariaDB para validar logs
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'practica',
-        'USER': 'test',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        # 'NAME': 'practica',
+        # 'USER': 'test',
+        # 'PASSWORD': 'test',
+        # 'HOST': 'localhost',
+        
+        # -------
+        
+        'NAME': os.environ.get('MYSQL_DB'),
+        'USER': os.environ.get('MYSQL_USER'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
+        'HOST': os.environ.get('MYSQL_HOST'),
         'PORT': '3306',
     }
 }

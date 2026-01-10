@@ -4,13 +4,39 @@ services:
     container_name: django_api
     ports:
       - "8000:8000"
+    depends_on:
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_DB: practica
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
     volumes:
       - ./backend:/app
-    environment:
-      - DEBUG=1
 
   frontend:
-    build: ./frontend
-    container_name: vue_app
+      build: ./frontend
+      container_name: vue_app
+      ports:
+        - "8080:80"
+      depends_on:
+        - backend
+      volumes:
+        - ./frontend:/app
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_logs
+    restart: always
+    environment:
+      MYSQL_DATABASE: practica
+      MYSQL_USER: test
+      MYSQL_PASSWORD: test
+      MYSQL_ROOT_PASSWORD: root
     ports:
-      - "8080:80"
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
