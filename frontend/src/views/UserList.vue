@@ -3,7 +3,7 @@
     <h2 class="text-3xl font-bold mb-6 text-gray-800">Usuarios Conectados</h2>
     <button @click="downloadCSV"
       class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
-      ⬇ Descargar CSV
+      ⬇ Descargar todo. CSV
     </button>
 
     <div v-if="error" class="mb-4 p-2 bg-red-100 text-red-700 rounded">

@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    container_name: django_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DEBUG=1
+
+  frontend:
+    build: ./frontend
+    container_name: vue_app
+    ports:
+      - "8080:80"
