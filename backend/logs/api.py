@@ -517,4 +517,9 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
 
         return response
 
-    
+    #endpoint de prueba del BACKEND (8000) para ver si se refresca con los contenedores levantados, para llamarlo en script en frontend 
+    #cuando en mi naveagdor (front) aparece localhost:8080/#/... es vue, por eso no aparece, habria que modificar el router/index.js de frontent
+    @action(detail=False, methods=["get"], url_path="pruebita")
+    def prueba(self, request):
+        mensaje = {"mensaje": "¡Endpoint de prueba funcionando!"}
+        return Response(mensaje)

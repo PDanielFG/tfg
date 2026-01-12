@@ -15,14 +15,15 @@ services:
       - ./backend:/app
 
   frontend:
-      build: ./frontend
-      container_name: vue_app
-      ports:
-        - "8080:80"
-      depends_on:
-        - backend
-      volumes:
-        - ./frontend:/app
+    build: ./frontend
+    container_name: vue_app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+
 
   mysql:
     image: mysql:8.0
