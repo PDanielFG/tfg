@@ -83,6 +83,10 @@
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Query</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Error</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Mensaje de error</th>
+            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">
+              Tipo de error
+            </th>
+
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
@@ -98,6 +102,19 @@
             }}
             </td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ q.error_message || '-' }}</td>
+            <td class="px-4 py-2 text-center">
+              <span v-if="q.syntax_error" class="px-2 py-1 text-xs font-bold rounded bg-red-200 text-red-800">
+                Sintaxis
+              </span>
+
+              <span v-else-if="q.logic_error" class="px-2 py-1 text-xs font-bold rounded bg-orange-200 text-orange-800">
+                Lógico
+              </span>
+
+              <span v-else class="text-gray-400">—</span>
+            </td>
+
+
           </tr>
         </tbody>
       </table>
