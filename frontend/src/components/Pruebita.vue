@@ -7,4 +7,5 @@
     <p>HOLA123456789</p>
     <p>----------------------difjpdijpsid--------</p>
     <p>con docker compose stop</p>
+    <p>prueba dockerfile nginx con down, sin borrar volumenes ni imagenes. habria que borar imagenes</p>
 </template>
