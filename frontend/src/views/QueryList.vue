@@ -34,7 +34,6 @@
           <tr>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Timestamp</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">User</th>
-            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Id usuario</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Command</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Query</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Error</th>
@@ -49,7 +48,6 @@
             :class="{ 'hover:bg-gray-50': true, 'bg-red-100 text-red-800': log.was_error === true, 'bg-green-100 text-green-800': log.was_error === false }">
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDate(log.timestamp) }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ log.user_host || '-' }}</td>
-            <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ log.thread_id || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ log.command_type || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ log.query || '-' }}</td>
             <!--si log.was_error es true pone si (que es la primera opcion antes del ?), si es false pone la segunda-->

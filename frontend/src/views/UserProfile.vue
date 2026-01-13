@@ -80,7 +80,6 @@
           <tr>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Timestamp</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">User</th>
-            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Id usuario</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Query</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Error</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Mensaje de error</th>
@@ -94,7 +93,6 @@
           }">
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDate(q.timestamp) }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ q.user_host || '-' }}</td>
-            <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ q.thread_id || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ q.query || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ q.was_error === true ? 'Sí' : 'No'
             }}
@@ -133,7 +131,6 @@
           <tr>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Timestamp</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">User</th>
-            <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Id usuario</th>
             <th class="px-4 py-3 text-center text-gray-600 font-semibold uppercase">Duracion</th>
           </tr>
         </thead>
@@ -141,7 +138,6 @@
           <tr v-for="c in conexiones" :key="c.id" class="hover:bg-gray-50">
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDate(c.timestamp) }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ c.user_host || '-' }}</td>
-            <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ c.thread_id || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDuration(c.connection_duration)
             }}
             </td>
