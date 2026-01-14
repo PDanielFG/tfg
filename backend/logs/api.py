@@ -12,6 +12,7 @@ import csv  # para poder usar csv.writer
 from django.http import HttpResponse  # para poder devolver HttpResponse
 from django.db.models import Count, Q  # para Count y Q
 from .models import MysqlLogLine  # o la ruta correcta a tu modelo
+import re
 
 
 
@@ -523,3 +524,168 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
     def prueba(self, request):
         mensaje = {"mensaje": "¡Endpoint de prueba funcionando!"}
         return Response(mensaje)
+    
+#.....................................
+#Endpoints para las estadísticas globales
+# ----------------------------------------
+# ENDPOINTS GLOBALES (excluyendo test)
+# ----------------------------------------
+
+    # Queries correctas vs erróneas (global)
+    @action(detail=False, methods=["get"], url_path="global/query-group")
+    def global_query_summary(self, request):
+        total_queries = MysqlLogLine.objects.filter(command_type="Query").exclude(user_host="test@localhost")
+        errores = total_queries.filter(was_error=True).count()
+        correctas = total_queries.count() - errores
+        return Response({"correctas": correctas, "erroneas": errores})
+
+    # Complejidad de consultas (global)
+    @action(detail=False, methods=["get"], url_path="global/complexity-group")
+    def global_complexity_summary(self, request):
+        queries = MysqlLogLine.objects.filter(command_type="Query", was_error=False).exclude(user_host="test@localhost")
+        total = queries.count()
+        complejas = queries.filter(is_complex=True).count()
+        simples = total - complejas
+        return Response({"total": total, "complejas": complejas, "simples": simples})
+
+    # Errores de sintaxis y lógica (global)
+    @action(detail=False, methods=["get"], url_path="global/errors-group")
+    def global_error_summary(self, request):
+        queries = MysqlLogLine.objects.filter(command_type="Query").exclude(user_host="test@localhost")
+        syntax_errors = queries.filter(syntax_error=True).count()
+        logic_errors = queries.filter(logic_error=True).count()
+        return Response({"syntax_errors": syntax_errors, "logic_errors": logic_errors})
+
+    # Resumen de sesiones (global)
+    @action(detail=False, methods=["get"], url_path="global/sessions-summary")
+    def global_sessions_summary(self, request):
+        group_by = request.query_params.get("group_by", "session")
+        connections = MysqlLogLine.objects.filter(command_type="Connect").exclude(user_host="test@localhost")
+        queries = MysqlLogLine.objects.filter(command_type="Query").exclude(user_host="test@localhost")
+
+        # Agrupación por sesión
+        if group_by == "session":
+            data = []
+            for conn in connections.order_by("timestamp"):
+                duration_seconds = int(conn.connection_duration.total_seconds()) if conn.connection_duration else 0
+                end_time = conn.timestamp + timedelta(seconds=duration_seconds)
+                queries_in_session = queries.filter(timestamp__gte=conn.timestamp, timestamp__lte=end_time)
+                queries_ok = queries_in_session.filter(was_error=False).count()
+                queries_error = queries_in_session.filter(was_error=True).count()
+                data.append({
+                    "label": conn.timestamp.strftime("%Y-%m-%d %H:%M"),
+                    "duration": duration_seconds,
+                    "queries": queries_in_session.count(),
+                    "queries_correct": queries_ok,
+                    "queries_incorrect": queries_error
+                })
+            return Response(data)
+
+        # Agrupación por día, semana o mes
+        if group_by == "day":
+            trunc = TruncDay("timestamp")
+            date_format = "%Y-%m-%d"
+        elif group_by == "week":
+            trunc = TruncWeek("timestamp")
+            date_format = "%Y-%m-%d"
+        elif group_by == "month":
+            trunc = TruncMonth("timestamp")
+            date_format = "%Y-%m"
+        else:
+            return Response({"error": "group_by inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
+        connections_agg = (
+            connections.annotate(period=trunc)
+            .values("period")
+            .annotate(duration=Sum("connection_duration"))
+            .order_by("period")
+        )
+
+        queries_agg = (
+            queries.annotate(period=trunc)
+            .values("period")
+            .annotate(
+                queries_total=Count("id"),
+                queries_correct=Count("id", filter=Q(was_error=False)),
+                queries_incorrect=Count("id", filter=Q(was_error=True))
+            )
+        )
+
+        queries_map = {q["period"].strftime(date_format): q for q in queries_agg}
+
+        data = []
+        for c in connections_agg:
+            seconds = int(c["duration"].total_seconds()) if c["duration"] else 0
+            period_str = c["period"].strftime(date_format)
+            q_info = queries_map.get(period_str, {"queries_correct":0, "queries_incorrect":0, "queries_total":0})
+            data.append({
+                "label": period_str,
+                "duration": seconds,
+                "queries": q_info["queries_total"],
+                "queries_correct": q_info["queries_correct"],
+                "queries_incorrect": q_info["queries_incorrect"]
+            })
+
+        return Response(data)
+
+    
+    
+    
+    @action(detail=False, methods=["get"], url_path="global/query-types-group")
+    def query_types_group(self, request):
+        # Filtramos solo queries válidas (no error y tipo Query)
+        qs = MysqlLogLine.objects.filter(command_type="Query", was_error=False)
+        
+        # Agrupamos por sql_type, que puede ser SELECT, ALTER, etc.
+        data = qs.values('sql_type').annotate(count=Count('id')).order_by('-count')
+        
+        # Retornamos un JSON limpio
+        return Response([{"type": d["sql_type"], "count": d["count"]} for d in data])
+
+    # Tablas más consultadas (global)
+    @action(detail=False, methods=["get"], url_path="global/tables-group")
+    def tables_group(self, request):
+        qs = MysqlLogLine.objects.filter(command_type="Query", was_error=False)
+        table_counts = {}
+
+        for log in qs:
+            query_text = log.query or ""
+            try:
+                # Regex simple para encontrar "FROM table_name"
+                matches = re.findall(r"from\s+([`]?[\w]+[`]?)", query_text, re.IGNORECASE)
+                for table in matches:
+                    table = str(table).replace("`", "")
+                    table_counts[table] = table_counts.get(table, 0) + 1
+            except Exception as e:
+                print(f"[tables_group] Error parsing query: {query_text[:100]} ... -> {e}")
+                continue
+
+        # Ordenar de mayor a menor
+        sorted_tables = sorted(table_counts.items(), key=lambda x: x[1], reverse=True)
+
+        return Response([{"name": t[0], "count": t[1]} for t in sorted_tables])
+
+    # Columnas más consultadas (global)
+    @action(detail=False, methods=["get"], url_path="global/columns-group")
+    def columns_group(self, request):
+        qs = MysqlLogLine.objects.filter(command_type="Query", was_error=False)
+        column_counts = {}
+
+        for log in qs:
+            query_text = log.query or ""
+            try:
+                # Regex para columnas SELECT ... FROM (multi-línea con re.DOTALL)
+                match = re.search(r"select\s+(.+?)\s+from", query_text, re.IGNORECASE | re.DOTALL)
+                if match:
+                    cols = match.group(1).split(",")
+                    for col in cols:
+                        col_name = str(col.strip().split(" ")[0])  # Ignora alias
+                        column_counts[col_name] = column_counts.get(col_name, 0) + 1
+            except Exception as e:
+                print(f"[columns_group] Error parsing query: {query_text[:100]} ... -> {e}")
+                continue
+
+        # Ordenar de mayor a menor
+        sorted_columns = sorted(column_counts.items(), key=lambda x: x[1], reverse=True)
+
+        return Response([{"name": c[0], "count": c[1]} for c in sorted_columns])

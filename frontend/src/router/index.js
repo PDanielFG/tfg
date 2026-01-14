@@ -41,6 +41,11 @@ const routes = [
     component: () => import('@/views/UserGraphics.vue')
   },
   {
+    path: '/groupGeneral',
+    name: 'GroupGeneral',
+    component: () => import('@/views/GroupView.vue')
+  },
+  {
     path: '/pruebita',
     name: 'prueba',
     component: Pruebita
