@@ -9,10 +9,10 @@
                 <canvas ref="chartQueriesRef" class="flex-1"></canvas>
             </div>
             <div class="flex-1 min-w-[300px] max-w-[400px] h-[350px] bg-white p-4 rounded-lg shadow flex flex-col">
-                <canvas ref="chartComplexityRef" class="flex-1"></canvas>
+                <canvas ref="chartErrorsRef" class="flex-1"></canvas>
             </div>
             <div class="flex-1 min-w-[300px] max-w-[400px] h-[350px] bg-white p-4 rounded-lg shadow flex flex-col">
-                <canvas ref="chartErrorsRef" class="flex-1"></canvas>
+                <canvas ref="chartComplexityRef" class="flex-1"></canvas>
             </div>
         </div>
 
@@ -80,6 +80,11 @@ export default {
         const totalComplexity = ref(0)
         const totalErrors = ref(0)
 
+        const avgQueries = ref(0)
+        const avgCorrect = ref(0)
+        const avgIncorrect = ref(0)
+
+
         const renderDoughnut = (canvas, instance, labels, data, colors, title) => {
             if (!canvas) return
             if (instance) instance.destroy()
@@ -89,6 +94,16 @@ export default {
                 options: { plugins: { legend: { position: "top" }, title: { display: true, text: title } } }
             })
         }
+
+        const fetchAverages = async () => {
+            const res = await getAPI.get("/api/logs/global/queries-averages", {
+                params: { group_by: groupBy.value }
+            })
+            avgQueries.value = res.data.avg_total
+            avgCorrect.value = res.data.avg_correct
+            avgIncorrect.value = res.data.avg_incorrect
+        }
+
 
         const fetchQueries = async () => {
             const res = await getAPI.get("/api/logs/global/query-group/")
@@ -101,7 +116,7 @@ export default {
             const res = await getAPI.get("/api/logs/global/complexity-group/")
             const { simples, complejas } = res.data
             totalComplexity.value = simples + complejas
-            chartComplexityInstance = renderDoughnut(chartComplexityRef.value, chartComplexityInstance, ["Simples", "Complejas"], [simples, complejas], ["#3498db", "#9b59b6"], "Complejidad de consultas")
+            chartComplexityInstance = renderDoughnut(chartComplexityRef.value, chartComplexityInstance, ["Complejas", "Simples"], [simples, complejas], ["#9b59b6", "#f1c40f"], "Complejidad de consultas")
         }
 
         const fetchErrors = async () => {
@@ -181,37 +196,164 @@ export default {
             const params = { group_by: groupBy.value }
             if (fromDate.value) params.from = fromDate.value
             if (toDate.value) params.to = toDate.value
+
             const res = await getAPI.get("/api/logs/global/sessions-summary", { params })
             connectionsData.value = res.data
+
             if (chartConnectionsInstance) chartConnectionsInstance.destroy()
+
+            const dataPlugin = {
+                id: "dataLabels",
+                afterDatasetsDraw(chart) {
+                    const ctx = chart.ctx
+
+                    chart.data.datasets.forEach((dataset, datasetIndex) => {
+                        const meta = chart.getDatasetMeta(datasetIndex).data
+
+                        meta.forEach((barOrPoint, index) => {
+                            const value = dataset.data[index]
+                            ctx.save()
+                            ctx.fillStyle = dataset.borderColor || "#000"
+                            ctx.font = "12px Arial"
+                            ctx.textAlign = "center"
+                            ctx.textBaseline = "bottom"
+
+                            // Para barras
+                            if (dataset.type === "bar") {
+                                if (dataset.label === "Duración total") {
+                                    const h = Math.floor(value / 3600)
+                                    const m = Math.floor((value % 3600) / 60)
+                                    const s = value % 60
+                                    let label = ""
+                                    if (h) label += h + "h "
+                                    if (m || h) label += m + "m "
+                                    label += s + "s"
+                                    ctx.fillText(label, barOrPoint.x, barOrPoint.y - 5)
+                                } else {
+                                    ctx.fillText(value, barOrPoint.x, barOrPoint.y - 5)
+                                }
+                            }
+
+                            // Para línea de total queries (puntos)
+                            if (dataset.type === "line" && dataset.label === "Total queries") {
+                                ctx.fillText(value, barOrPoint.x, barOrPoint.y - 8)
+                            }
+
+                            // Para líneas punteadas de medias, solo al final
+                            if (dataset.type === "line" && dataset.label.includes("Media")) {
+                                if (index === meta.length - 1) {
+                                    ctx.textAlign = "left"
+                                    ctx.fillText(value.toFixed(2), barOrPoint.x + 5, barOrPoint.y)
+                                }
+                            }
+
+                            ctx.restore()
+                        })
+                    })
+                }
+            }
+
             chartConnectionsInstance = new ChartJS(chartConnectionsRef.value.getContext("2d"), {
                 data: {
                     labels: connectionsData.value.map(e => e.label),
                     datasets: [
-                        { type: "bar", label: "Duración total", data: connectionsData.value.map(e => e.duration), backgroundColor: "#3498db", yAxisID: "y", order: 1 },
-                        { type: "bar", label: "Queries correctas", data: connectionsData.value.map(e => e.queries_correct), backgroundColor: "#2ecc71", yAxisID: "y2", order: 2 },
-                        { type: "bar", label: "Queries incorrectas", data: connectionsData.value.map(e => e.queries_incorrect), backgroundColor: "#e74c3c", yAxisID: "y2", order: 3 },
-                        { type: "line", label: "Total queries", data: connectionsData.value.map(e => e.queries), borderColor: "#2c3e50", borderWidth: 2, tension: 0.3, pointRadius: 4, yAxisID: "y2", order: 0 }
+                        {
+                            type: "bar",
+                            label: "Duración total",
+                            data: connectionsData.value.map(e => e.duration),
+                            backgroundColor: "#3498db",
+                            yAxisID: "y",
+                            order: 1
+                        },
+                        {
+                            type: "bar",
+                            label: "Queries correctas",
+                            data: connectionsData.value.map(e => e.queries_correct),
+                            backgroundColor: "#2ecc71",
+                            yAxisID: "y2",
+                            order: 2
+                        },
+                        {
+                            type: "bar",
+                            label: "Queries incorrectas",
+                            data: connectionsData.value.map(e => e.queries_incorrect),
+                            backgroundColor: "#e74c3c",
+                            yAxisID: "y2",
+                            order: 3
+                        },
+                        {
+                            type: "line",
+                            label: "Total queries",
+                            data: connectionsData.value.map(e => e.queries_correct + e.queries_incorrect),
+                            borderColor: "#8e44ad",
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: "#8e44ad",
+                            yAxisID: "y2",
+                            order: 0
+                        },
+                        {
+                            type: "line",
+                            label: "Media total queries",
+                            data: connectionsData.value.map(() => avgQueries.value),
+                            borderColor: "#2c3e50",
+                            borderDash: [6, 6],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: "y2",
+                            order: 0
+                        },
+                        {
+                            type: "line",
+                            label: "Media correctas",
+                            data: connectionsData.value.map(() => avgCorrect.value),
+                            borderColor: "#27ae60",
+                            borderDash: [6, 6],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: "y2",
+                            order: 0
+                        },
+                        {
+                            type: "line",
+                            label: "Media incorrectas",
+                            data: connectionsData.value.map(() => avgIncorrect.value),
+                            borderColor: "#c0392b",
+                            borderDash: [6, 6],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            yAxisID: "y2",
+                            order: 0
+                        }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, title: { display: true, text: "Duración" }, ticks: { callback: formatDuration } },
+                        y: { beginAtZero: true, title: { display: true, text: "Duración" } },
                         y2: { beginAtZero: true, position: "right", title: { display: true, text: "Número de queries" }, grid: { drawOnChartArea: false } }
-                    }
-                }
+                    },
+                    plugins: { legend: { display: true } }
+                },
+                plugins: [dataPlugin]
             })
         }
+
+
 
         onMounted(() => {
             fetchQueries(); fetchComplexity(); fetchErrors()
             fetchQueryTypes(); fetchTables(); fetchColumns()
-            fetchConnections()
+            fetchConnections(); fetchAverages()
         })
 
-        watch([groupBy, fromDate, toDate], fetchConnections)
+        watch([groupBy, fromDate, toDate], () => {
+            fetchConnections(),
+                fetchAverages()
+        })
 
         return {
             chartQueriesRef, chartComplexityRef, chartErrorsRef,

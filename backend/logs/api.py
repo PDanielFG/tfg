@@ -13,7 +13,7 @@ from django.http import HttpResponse  # para poder devolver HttpResponse
 from django.db.models import Count, Q  # para Count y Q
 from .models import MysqlLogLine  # o la ruta correcta a tu modelo
 import re
-
+from django.db.models import Avg
 
 
 
@@ -694,3 +694,50 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         top_columns = sorted_columns[:20]
 
         return Response([{"name": c[0], "count": c[1]} for c in top_columns])
+    
+    @action(detail=False, methods=["get"], url_path="global/queries-averages")
+    def global_queries_averages(self, request):
+        group_by = request.query_params.get("group_by", "day")
+
+        if group_by == "day":
+            trunc = TruncDay("timestamp")
+        elif group_by == "week":
+            trunc = TruncWeek("timestamp")
+        elif group_by == "month":
+            trunc = TruncMonth("timestamp")
+        else:
+            return Response({"error": "group_by inválido"}, status=400)
+
+        qs = MysqlLogLine.objects.filter(
+            command_type="Query"
+        ).exclude(user_host="test@localhost")
+
+        aggregated = (
+            qs.annotate(period=trunc)
+            .values("period")
+            .annotate(
+                total=Count("id"),
+                correct=Count("id", filter=Q(was_error=False)),
+                incorrect=Count("id", filter=Q(was_error=True)),
+            )
+        )
+
+        count_periods = aggregated.count()
+        if count_periods == 0:
+            return Response({
+                "avg_total": 0,
+                "avg_correct": 0,
+                "avg_incorrect": 0
+            })
+
+        sums = aggregated.aggregate(
+            avg_total=Avg("total"),
+            avg_correct=Avg("correct"),
+            avg_incorrect=Avg("incorrect")
+        )
+
+        return Response({
+            "avg_total": round(sums["avg_total"], 2),
+            "avg_correct": round(sums["avg_correct"], 2),
+            "avg_incorrect": round(sums["avg_incorrect"], 2)
+        })
