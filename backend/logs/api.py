@@ -665,7 +665,7 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response([{"name": t[0], "count": t[1]} for t in sorted_tables])
 
-    # Columnas más consultadas (global)
+   # Columnas más consultadas (global)
     @action(detail=False, methods=["get"], url_path="global/columns-group")
     def columns_group(self, request):
         qs = MysqlLogLine.objects.filter(command_type="Query", was_error=False)
@@ -674,18 +674,23 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
         for log in qs:
             query_text = log.query or ""
             try:
-                # Regex para columnas SELECT ... FROM (multi-línea con re.DOTALL)
+                # Regex para columnas SELECT ... FROM (multi-línea)
                 match = re.search(r"select\s+(.+?)\s+from", query_text, re.IGNORECASE | re.DOTALL)
                 if match:
                     cols = match.group(1).split(",")
                     for col in cols:
-                        col_name = str(col.strip().split(" ")[0])  # Ignora alias
-                        column_counts[col_name] = column_counts.get(col_name, 0) + 1
+                        # Eliminar alias y espacios
+                        col_name = col.strip().split(" ")[0].lower()  # minusculas para uniformidad
+                        if col_name:  # ignorar vacíos
+                            column_counts[col_name] = column_counts.get(col_name, 0) + 1
             except Exception as e:
                 print(f"[columns_group] Error parsing query: {query_text[:100]} ... -> {e}")
                 continue
 
-        # Ordenar de mayor a menor
+        # Ordenar de mayor a menor y eliminar duplicados
         sorted_columns = sorted(column_counts.items(), key=lambda x: x[1], reverse=True)
 
-        return Response([{"name": c[0], "count": c[1]} for c in sorted_columns])
+        # Retornar solo las N columnas más usadas, por ejemplo top 20
+        top_columns = sorted_columns[:20]
+
+        return Response([{"name": c[0], "count": c[1]} for c in top_columns])

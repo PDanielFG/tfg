@@ -152,8 +152,16 @@ export default {
             const res = await getAPI.get("/api/logs/global/columns-group/")
             const labels = res.data.map(e => e.name)
             const data = res.data.map(e => e.count)
-            chartColumnsInstance = renderHorizontalBar(chartColumnsRef.value, chartColumnsInstance, labels, data, "Columnas más consultadas", "#9b59b6")
+            chartColumnsInstance = renderHorizontalBar(
+                chartColumnsRef.value,
+                chartColumnsInstance,
+                labels,
+                data,
+                "Columnas más consultadas",
+                "#9b59b6"
+            )
         }
+
 
         /* GLOBAL SESSIONS */
         const chartConnectionsRef = ref(null)
