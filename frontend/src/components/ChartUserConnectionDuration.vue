@@ -14,14 +14,14 @@
             <input type="date" v-model="toDate" class="border px-2 py-1 rounded" />
         </div>
 
-        <!-- <div class="flex justify-center mb-4">
+        <div class="flex justify-center mb-3">
             <button @click="exportCSV" class="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600">
-                Exportar CSV
+                Descargar CSV info gráfico
             </button>
-        </div> -->
+        </div>
 
         <canvas ref="chartRef" title="Click para descargar CSV"
-            class="cursor-pointer">
+            class="cursor-pointer mb-6">
         </canvas>
 
         <div v-if="finalData.length === 0" class="text-gray-500 mt-2">
@@ -240,10 +240,10 @@ export default defineComponent({
         const chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            onClick: (event, elements) => {
-                if (!finalData.value.length) return;
-                exportCSV();
-            },
+            // onClick: (event, elements) => {
+            //     if (!finalData.value.length) return;
+            //     exportCSV();
+            // },
             scales: {
                 y: {
                     beginAtZero: true,

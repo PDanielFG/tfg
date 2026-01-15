@@ -22,11 +22,8 @@
         </div>
 
         <div class="mt-12 pt-1">
-            <h2 class="text-xl font-semibold text-gray-700 mb-1 mt-4 text-center">
-                Gráficos generales
-            </h2>
 
-            <div class="mb-8 flex justify-center flex-wrap gap-6 m5">
+            <div class="mt-12 flex justify-center flex-wrap gap-6 m5">
 
                 <div class="flex-1 min-w-[300px] max-w-[400px] bg-white p-4 rounded-lg shadow">
                     <ChartQueriesByType :username="selectedUser" />
