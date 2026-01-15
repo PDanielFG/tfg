@@ -46,6 +46,11 @@ const routes = [
     component: () => import('@/views/GroupView.vue')
   },
   {
+    path: '/groupTable',
+    name: 'GroupTable',
+    component: () => import ('@/views/GroupTable.vue')
+  },
+  {
     path: '/pruebita',
     name: 'prueba',
     component: Pruebita

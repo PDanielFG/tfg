@@ -1,8 +1,8 @@
 <template>
     <div class="w-full h-80 mx-auto">
 
-        <!-- ⭐ NUEVO: Controles -->
-        <div class="flex flex-wrap justify-center gap-4 mb-4">
+        <!-- ⭐ Controles -->
+        <div class="flex flex-wrap justify-center gap-4 mb-2">
             <select v-model="groupBy" class="border px-3 py-1 rounded shadow-sm">
                 <option value="session">Por sesión</option>
                 <option value="day">Por día</option>
@@ -10,17 +10,25 @@
                 <option value="month">Por mes</option>
             </select>
 
-            <!-- ⭐ NUEVO: intervalo de fechas -->
             <input type="date" v-model="fromDate" class="border px-2 py-1 rounded" />
             <input type="date" v-model="toDate" class="border px-2 py-1 rounded" />
         </div>
 
-        <canvas ref="chartRef"></canvas>
+        <!-- <div class="flex justify-center mb-4">
+            <button @click="exportCSV" class="bg-blue-500 text-white px-4 py-2 rounded shadow hover:bg-blue-600">
+                Exportar CSV
+            </button>
+        </div> -->
+
+        <canvas ref="chartRef" title="Click para descargar CSV"
+            class="cursor-pointer">
+        </canvas>
 
         <div v-if="finalData.length === 0" class="text-gray-500 mt-2">
             No hay datos para mostrar.
         </div>
     </div>
+
 </template>
 
 <script>
@@ -80,6 +88,54 @@ export default defineComponent({
                 console.error("Error cargando datos:", err);
                 finalData.value = []
             }
+        };
+
+        const exportCSV = () => {
+            if (!finalData.value.length) {
+                alert("No hay datos para exportar");
+                return;
+            }
+
+            // Cabecera del CSV
+            const headers = [
+                "Label",
+                "Duracion (seg)",
+                "Duracion formateada",
+                "Total Queries",
+                "Queries Correctas",
+                "Queries Incorrectas"
+            ];
+
+            // Construir filas
+            const rows = finalData.value.map(e => [
+                e.label,
+                e.duration,
+                formatDuration(e.duration),
+                e.queries,
+                e.queries_correct,
+                e.queries_incorrect
+            ]);
+
+            // Crear contenido CSV
+            let csvContent = "";
+            csvContent += headers.join(",") + "\n"; // cabecera
+            rows.forEach(row => {
+                // Escapar comas o comillas si hubiera texto
+                const escaped = row.map(cell => `"${String(cell).replace(/"/g, '""')}"`);
+                csvContent += escaped.join(",") + "\n";
+            });
+
+            // Crear blob y enlace de descarga
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", `user_${props.username}_sessions.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url); // liberar memoria
         };
 
 
@@ -184,6 +240,10 @@ export default defineComponent({
         const chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
+            onClick: (event, elements) => {
+                if (!finalData.value.length) return;
+                exportCSV();
+            },
             scales: {
                 y: {
                     beginAtZero: true,
@@ -198,9 +258,9 @@ export default defineComponent({
                     title: { display: true, text: "Número de queries" },
                     grid: { drawOnChartArea: false }
                 },
-                x: { 
+                x: {
                     title: { display: true, text: "Sesiones" },
-                    stacked: false, 
+                    stacked: false,
                 }
             },
             plugins: {
@@ -275,7 +335,7 @@ export default defineComponent({
             { immediate: true }
         );
 
-        return { chartRef, finalData, groupBy, fromDate, toDate };
+        return { chartRef, finalData, groupBy, fromDate, toDate, exportCSV };
     }
 });
 </script>
