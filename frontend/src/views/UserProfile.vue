@@ -6,19 +6,21 @@
         :to="{ name: 'UserGraphics', params: { username: $route.params.username } }">Ver estadísticas</router-link>
     </h1>
 
-    <div class="mb-4">
-      <span class="font-semibold">Última conexión: </span>
-      <span>{{ formatDate(usuario?.last_connected) }}</span>
-    </div>
-
-    <h2 class="text-xl font-semibold mt-6 mb-4">
-      Queries realizadas: <span class="text-gray-600">{{ queries.length }}</span>
-    </h2>
-
     <button @click="downloadUserFullCSV"
       class="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition">
       ⬇ Descargar CSV Completo
     </button>
+
+    <div class="mb-4 mt-6">
+      <span class="font-semibold">Última conexión: </span>
+      <span>{{ formatDate(usuario?.last_connected) }}</span>
+
+
+      <h2 class="text-xl font-semibold">
+        Queries realizadas: <span class="text-gray-600">{{ queries.length }}</span>
+      </h2>
+    </div>
+
 
 
 
@@ -106,7 +108,7 @@
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ q.user_host || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ q.query || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ q.was_error === true ? 'Sí' : 'No'
-            }}
+              }}
             </td>
             <td class="px-4 py-2 text-gray-700 text-center break-words max-w-xl">{{ q.error_message || '-' }}</td>
             <td class="px-4 py-2 text-center">
@@ -163,7 +165,7 @@
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDate(c.timestamp) }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ c.user_host || '-' }}</td>
             <td class="px-4 py-2 text-gray-700 text-center whitespace-nowrap">{{ formatDuration(c.connection_duration)
-            }}
+              }}
             </td>
           </tr>
         </tbody>
