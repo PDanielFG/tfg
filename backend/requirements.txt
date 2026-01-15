@@ -2,7 +2,8 @@ django==5.2.8
 djangorestframework==3.16.1
 django-environ==0.12.0
 django-cors-headers==4.9.0
-mysqlclient==2.2.4
+mysqlclient==2.2.4 ; platform_system!="Windows"
+PyMySQL==1.1.0 ; platform_system=="Windows"
 asgiref==3.10.0
 distlib==0.4.0
 et_xmlfile==2.0.0
