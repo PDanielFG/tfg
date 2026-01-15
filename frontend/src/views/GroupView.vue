@@ -10,7 +10,7 @@
                 :to="{ name: 'GroupTable'}">Tabla resumen grupal</router-link>
         </h1>
 
-        <div class="mb-10 flex justify-center flex-wrap gap-6">
+        <div class="mb-10 flex justify-center flex-wrap gap-6 mt-6">
             <div class="flex-1 min-w-[300px] max-w-[400px] h-[350px] bg-white p-4 rounded-lg shadow flex flex-col">
                 <canvas ref="chartQueriesRef" class="flex-1"></canvas>
             </div>
