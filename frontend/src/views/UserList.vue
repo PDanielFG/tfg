@@ -1,8 +1,9 @@
 <template>
   <div class="p-6 bg-gray-100 min-h-screen">
     <h2 class="text-3xl font-bold mb-6 text-gray-800">Usuarios Conectados</h2>
+
     <button @click="downloadCSV"
-      class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+      class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition mb-6">
       ⬇ Descargar todo. CSV
     </button>
 
@@ -10,21 +11,22 @@
       {{ error }}
     </div>
 
+    <!-- Filtros -->
     <div class="mb-6 flex flex-wrap items-end justify-center gap-4">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 font-semibold">Usuario</label>
+        <label class="block text-sm font-semibold text-gray-700">Usuario</label>
         <input v-model="filterUsername" @input="applyFilters" type="text" placeholder="Buscar usuario"
           class="px-3 py-2 border rounded-lg shadow-sm focus:ring focus:ring-blue-300" />
       </div>
 
       <div>
-        <label class="block text-sm font-semibold text-gray-700 font-semibold">Desde</label>
+        <label class="block text-sm font-semibold text-gray-700">Desde</label>
         <input v-model="filterFromDate" @change="applyFilters" type="date"
           class="px-3 py-2 border rounded-lg shadow-sm" />
       </div>
 
       <div>
-        <label class="block text-sm font-semibold text-gray-700 font-semibold">Hasta</label>
+        <label class="block text-sm font-semibold text-gray-700">Hasta</label>
         <input v-model="filterToDate" @change="applyFilters" type="date"
           class="px-3 py-2 border rounded-lg shadow-sm" />
       </div>
@@ -35,7 +37,6 @@
           class="px-3 py-2 border rounded-lg shadow-sm w-32" />
       </div>
 
-      <!-- Filtrar por mínimo de consultas -->
       <div>
         <label class="block text-sm font-semibold text-gray-700">Mínimo consultas</label>
         <input v-model.number="filterMinQueries" @input="applyFilters" type="number" min="1" placeholder="Ej: 5"
@@ -43,52 +44,29 @@
       </div>
     </div>
 
-    <!-- Controles de ordenación -->
+    <!-- Media -->
+    <div class="mb-4 text-center text-gray-700">
+      <span class="font-semibold">Media grupal de consultas:</span>
+      <span class="ml-2 text-blue-600 font-bold">{{ averageQueries.toFixed(2) }}</span>
+      <span class="ml-6 font-semibold">Media grupal de conexiones:</span>
+      <span class="ml-2 text-purple-600 font-bold">{{ averageConnections.toFixed(2) }}</span>
+    </div>
+
+    <!-- Ordenación -->
     <div class="mb-4 flex items-center justify-center gap-4">
       <label class="text-gray-700 font-semibold">Ordenar por:</label>
       <select v-model="sortOption" @change="applyFilters"
         class="px-3 py-2 border rounded-lg bg-white shadow-sm focus:ring focus:ring-blue-300">
         <option value="az">Usuario A → Z</option>
         <option value="za">Usuario Z → A</option>
-        <option value="queries_desc">RANKING - Más consultas</option>
-        <option value="queries_asc">RANKING - Menos consultas</option>
+        <option value="queries_desc">Más consultas</option>
+        <option value="queries_asc">Menos consultas</option>
+        <option value="connections_desc">Más conexiones</option>
+        <option value="connections_asc">Menos conexiones</option>
         <option value="recent">Última conexión (más reciente)</option>
         <option value="oldest">Última conexión (más antigua)</option>
       </select>
     </div>
-
-    <div v-if="users.length === 0 && !error" class="text-gray-500">
-      No hay usuarios conectados.
-    </div>
-
-    <div class="mb-4 text-center text-gray-700">
-      <span class="font-semibold">
-        Usuarios totales:
-      </span>
-      {{ totalUsers }}
-
-      <span v-if="totalFilteredUsers !== totalUsers" class="ml-4 text-gray-500">
-        (Mostrando {{ totalFilteredUsers }} tras filtros)
-      </span>
-    </div>
-
-
-    <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 py-4">
-      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50" :disabled="currentPage === 1"
-        @click="currentPage--">
-        Anterior
-      </button>
-
-      <span class="font-semibold">
-        Página {{ currentPage }} de {{ totalPages }}
-      </span>
-
-      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-        :disabled="currentPage === totalPages" @click="currentPage++">
-        Siguiente
-      </button>
-    </div>
-
 
     <div v-if="users.length" class="overflow-x-auto bg-white rounded-lg shadow">
       <table class="min-w-full table-fixed divide-y divide-gray-200">
@@ -101,41 +79,44 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-          <!--Con router link hacemos toda la fila clickable, hacia la nueva vista, eliminamos la etiqeuta tr
-          Con el parametro dinámico param, genera un endpoint nuevo usando el ednpoint que acabamos de crear en router index.js
-          con name UserProfile/parametro dincamico-->
-          <router-link v-for="(user, index) in paginatedUsers" :key="user.user"
-            :to="{ name: 'UserProfile', params: { username: user.user } }" class="flex hover:bg-gray-50 cursor-pointer"
-            style="display: table-row;">
-            <td class="px-4 py-2 text-gray-700 text-center">
+          <tr v-for="(user, index) in paginatedUsers" :key="user.user" class="hover:bg-gray-50 cursor-pointer"
+            @click="goToUser(user.user)">
+            <td class="px-4 py-2 text-center">
               <span v-if="isQueryRanking">
                 {{ getRanking((currentPage - 1) * pageSize + index) }}º -
               </span>
               {{ user.user }}
             </td>
-            <td class="px-4 py-2 text-gray-700 text-center">{{ user.connections_count }}</td>
-            <td class="px-4 py-2 text-gray-700 text-center">{{ user.queries_count }}</td>
-            <td class="px-4 py-2 text-gray-700 text-center">{{ formatDate(user.last_connected) }}</td>
-          </router-link>
+
+            <td class="px-4 py-2 text-center font-semibold"
+              :class="isAboveAverageConnections(user) ? 'text-green-600' : 'text-red-600'">
+              {{ user.connections_count }}
+            </td>
+
+            <td class="px-4 py-2 text-center font-semibold"
+              :class="isAboveAverage(user) ? 'text-green-600' : 'text-red-600'">
+              {{ user.queries_count }}
+            </td>
+
+            <td class="px-4 py-2 text-center">
+              {{ formatDate(user.last_connected) }}
+            </td>
+          </tr>
         </tbody>
       </table>
+    </div>
 
-      <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 py-4">
-        <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-          :disabled="currentPage === 1" @click="currentPage--">
-          Anterior
-        </button>
-
-        <span class="font-semibold">
-          Página {{ currentPage }} de {{ totalPages }}
-        </span>
-
-        <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-          :disabled="currentPage === totalPages" @click="currentPage++">
-          Siguiente
-        </button>
-      </div>
-
+    <!-- Paginación -->
+    <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 py-4">
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50" :disabled="currentPage === 1"
+        @click="currentPage--">
+        Anterior
+      </button>
+      <span class="font-semibold">Página {{ currentPage }} de {{ totalPages }}</span>
+      <button class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+        :disabled="currentPage === totalPages" @click="currentPage++">
+        Siguiente
+      </button>
     </div>
   </div>
 </template>
@@ -150,46 +131,41 @@ export default {
       users: [],
       usersOriginal: [],
       error: null,
-      sortOption: 'az', // opción por defecto
-
-
+      sortOption: 'az',
       filterUsername: '',
       filterFromDate: '',
       filterToDate: '',
-
-      filterMinQueries: null,  // Número mínimo de consultas
-      filterLastDays: null,     // Últimos X días
-
+      filterMinQueries: null,
+      filterLastDays: null,
       currentPage: 1,
       pageSize: 25,
-
       csvUrl: (process.env.VUE_APP_API_URL || "http://localhost:8000") + "/api/logs/export/csv",
-
     }
   },
   created() {
     this.listarUsuarios();
   },
   computed: {
+    averageQueries() {
+      if (!this.usersOriginal.length) return 0;
+      const total = this.usersOriginal.reduce((sum, u) => sum + u.queries_count, 0);
+      return total / this.usersOriginal.length;
+    },
+    averageConnections() {
+      if (!this.usersOriginal.length) return 0;
+      const total = this.usersOriginal.reduce((sum, u) => sum + u.connections_count, 0);
+      return total / this.usersOriginal.length;
+    },
     isQueryRanking() {
-      return (
-        this.sortOption === "queries_desc" ||
-        this.sortOption === "queries_asc"
-      );
+      return this.sortOption === "queries_desc" || this.sortOption === "queries_asc";
     },
-    totalUsers() {
-      return this.usersOriginal.length;
-    },
-
-    totalFilteredUsers() {
-      return this.users.length;
-    },
+    totalUsers() { return this.usersOriginal.length },
+    totalFilteredUsers() { return this.users.length },
     paginatedUsers() {
       const start = (this.currentPage - 1) * this.pageSize;
       const end = start + this.pageSize;
       return this.users.slice(start, end);
     },
-
     totalPages() {
       return Math.ceil(this.users.length / this.pageSize);
     }
@@ -199,92 +175,54 @@ export default {
       try {
         const params = {};
         if (this.filterLastDays) params.days = this.filterLastDays;
-
         const res = await getAPI.get('/api/logs/connected-users-summary/', { params });
-        console.log(res.data);
-        this.usersOriginal = res.data.filter(user => user.user.toLowerCase() !== 'test');
-
-        this.applyFilters(); // ordenar automáticamente al cargar
-
+        this.usersOriginal = res.data.filter(u => u.user.toLowerCase() !== 'test');
+        this.applyFilters();
       } catch (err) {
-        console.error('Error al cargar usuarios:', err);
+        console.error(err);
         this.error = 'Error al cargar usuarios conectados';
       }
     },
-
     applyFilters() {
       let filtered = [...this.usersOriginal];
-
-      // Filtro por nombre de usuario
       if (this.filterUsername) {
         const search = this.filterUsername.toLowerCase();
-        filtered = filtered.filter(user =>
-          user.user.toLowerCase().includes(search)
-        );
+        filtered = filtered.filter(u => u.user.toLowerCase().includes(search));
       }
-
-      // Filtro por fecha desde
       if (this.filterFromDate) {
         const from = new Date(this.filterFromDate);
-        filtered = filtered.filter(user =>
-          new Date(user.last_connected) >= from
-        );
+        filtered = filtered.filter(u => new Date(u.last_connected) >= from);
       }
-
-      // Filtro por fecha hasta
       if (this.filterToDate) {
-        const to = new Date(this.filterToDate);
-        to.setHours(23, 59, 59, 999);
-        filtered = filtered.filter(user =>
-          new Date(user.last_connected) <= to
-        );
+        const to = new Date(this.filterToDate); to.setHours(23,59,59,999);
+        filtered = filtered.filter(u => new Date(u.last_connected) <= to);
       }
-
       if (this.filterMinQueries) {
-        filtered = filtered.filter(user =>
-          user.queries_count >= this.filterMinQueries
-        );
+        filtered = filtered.filter(u => u.queries_count >= this.filterMinQueries);
       }
-
       this.users = filtered;
       this.sortUsers();
       this.currentPage = 1;
     },
-
-    // Método para ordenar usuarios
     sortUsers() {
-      if (this.sortOption === "az") {
-        this.users.sort((a, b) => a.user.localeCompare(b.user));
-      } else if (this.sortOption === "za") {
-        this.users.sort((a, b) => b.user.localeCompare(a.user));
-      } else if (this.sortOption === "recent") {
-        this.users.sort((a, b) => new Date(b.last_connected) - new Date(a.last_connected));
-      } else if (this.sortOption === "oldest") {
-        this.users.sort((a, b) => new Date(a.last_connected) - new Date(b.last_connected));
-      } else if (this.sortOption === "queries_desc") {
-        this.users.sort((a, b) => b.queries_count - a.queries_count);
-      } else if (this.sortOption === "queries_asc") {
-        this.users.sort((a, b) => a.queries_count - b.queries_count);
-      }
+      if (this.sortOption === "az") this.users.sort((a,b) => a.user.localeCompare(b.user));
+      else if (this.sortOption === "za") this.users.sort((a,b) => b.user.localeCompare(a.user));
+      else if (this.sortOption === "recent") this.users.sort((a,b) => new Date(b.last_connected) - new Date(a.last_connected));
+      else if (this.sortOption === "oldest") this.users.sort((a,b) => new Date(a.last_connected) - new Date(b.last_connected));
+      else if (this.sortOption === "queries_desc") this.users.sort((a,b) => b.queries_count - a.queries_count);
+      else if (this.sortOption === "queries_asc") this.users.sort((a,b) => a.queries_count - b.queries_count);
+      else if (this.sortOption === "connections_desc") this.users.sort((a,b) => b.connections_count - a.connections_count);
+      else if (this.sortOption === "connections_asc") this.users.sort((a,b) => a.connections_count - b.connections_count);
     },
     formatDate(dateStr) {
       if (!dateStr) return '-';
-      return new Intl.DateTimeFormat('es-ES', {
-        dateStyle: 'short',
-        timeStyle: 'medium',
-        timeZone: 'UTC'   // Evita la conversión automática
-      }).format(new Date(dateStr));
+      return new Intl.DateTimeFormat('es-ES', { dateStyle: 'short', timeStyle: 'medium', timeZone: 'UTC' }).format(new Date(dateStr));
     },
-    getRanking(index) {
-      return index + 1;
-    },
-
-    downloadCSV() {
-      window.open(this.csvUrl, "_blank");
-    }
-
-
-
+    getRanking(index) { return index + 1 },
+    downloadCSV() { window.open(this.csvUrl, "_blank") },
+    isAboveAverage(user) { return user.queries_count >= this.averageQueries },
+    isAboveAverageConnections(user) { return user.connections_count >= this.averageConnections },
+    goToUser(username) { this.$router.push({ name:'UserProfile', params:{username} }) },
   }
 }
 </script>
