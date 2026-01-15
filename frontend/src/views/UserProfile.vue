@@ -15,6 +15,13 @@
       Queries realizadas: <span class="text-gray-600">{{ queries.length }}</span>
     </h2>
 
+    <button @click="downloadUserFullCSV"
+      class="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition">
+      ⬇ Descargar CSV Completo
+    </button>
+
+
+
     <div class="mb-6 flex flex-wrap items-end justify-center gap-6">
 
       <div>
@@ -224,6 +231,14 @@ export default {
 
 
   methods: {
+
+    downloadUserFullCSV() {
+      const username = this.$route.params.username;
+      const url = `${process.env.VUE_APP_API_URL || "http://localhost:8000"}/api/logs/export/user/${username}/full/`;
+      window.open(url, "_blank");
+    },
+
+
     applyAllFilters() {
       let filtered = [...this.queriesOriginal];
 

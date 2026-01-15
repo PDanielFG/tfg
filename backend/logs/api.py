@@ -741,3 +741,115 @@ class MysqlLogLineViewSet(viewsets.ReadOnlyModelViewSet):
             "avg_correct": round(sums["avg_correct"], 2),
             "avg_incorrect": round(sums["avg_incorrect"], 2)
         })
+
+
+    @action(detail=False, methods=["get"], url_path="export/user/(?P<username>[^/.]+)/full")
+    def export_user_full_csv(self, request, username=None):
+        logs = MysqlLogLine.objects.filter(user_host__startswith=username + '@')
+
+        # -----------------
+        # 1️⃣ Resumen del usuario
+        # -----------------
+        total_queries = logs.filter(command_type='Query')
+        correctas = total_queries.filter(was_error=False).count()
+        incorrectas = total_queries.filter(was_error=True).count()
+        syntax_errors = total_queries.filter(syntax_error=True).count()
+        logic_errors = total_queries.filter(logic_error=True).count()
+        complejas = total_queries.filter(is_complex=True).count()
+        simples = total_queries.filter(is_complex=False).count()
+
+        # Tipos de consultas SQL
+        sql_types = total_queries.values('sql_type').annotate(count=Count('id'))
+        sql_types_str = "\n".join([f"{t['sql_type']}: {t['count']}" for t in sql_types])
+
+        # Tablas más consultadas
+        table_counts = {}
+        for log in total_queries:
+            query_text = log.query or ""
+            matches = re.findall(r"from\s+([`]?[\w]+[`]?)", query_text, re.IGNORECASE)
+            for table in matches:
+                table = str(table).replace("`", "")
+                table_counts[table] = table_counts.get(table, 0) + 1
+        tables_str = "\n".join([f"{k}: {v}" for k, v in sorted(table_counts.items(), key=lambda x: -x[1])])
+
+        # Columnas más consultadas
+        column_counts = {}
+        for log in total_queries:
+            query_text = log.query or ""
+            match = re.search(r"select\s+(.+?)\s+from", query_text, re.IGNORECASE | re.DOTALL)
+            if match:
+                cols = match.group(1).split(",")
+                for col in cols:
+                    col_name = col.strip().split(" ")[0].lower()
+                    if col_name:
+                        column_counts[col_name] = column_counts.get(col_name, 0) + 1
+        columns_str = "\n".join([f"{k}: {v}" for k, v in sorted(column_counts.items(), key=lambda x: -x[1])])
+
+        # -----------------
+        # Crear CSV
+        # -----------------
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="{username}_full.csv"'
+        writer = csv.writer(response, quoting=csv.QUOTE_ALL)
+
+        # --- Resumen ---
+        writer.writerow(["Resumen del usuario"])
+        headers_summary = [
+            "Usuario",
+            "Queries correctas",
+            "Queries incorrectas",
+            "Errores sintacticos",
+            "Errores logicos",
+            "Consultas complejas",
+            "Consultas simples",
+            "Tipos de consultas SQL",
+            "Tablas más consultadas",
+            "Columnas más consultadas"
+        ]
+        writer.writerow(headers_summary)
+        writer.writerow([
+            username,
+            correctas,
+            incorrectas,
+            syntax_errors,
+            logic_errors,
+            complejas,
+            simples,
+            sql_types_str,
+            tables_str,
+            columns_str
+        ])
+
+        # Fila vacía para separar
+        writer.writerow([])
+
+        # --- Logs detallados ---
+        writer.writerow(["Logs detallados"])
+        log_fields = [
+            "timestamp",
+            "user_host",
+            "command_type",
+            "query",
+            "was_error",
+            "error_message",
+            "syntax_error",
+            "logic_error",
+            "sql_type",
+            "is_complex",
+            "thread_id",
+        ]
+        writer.writerow(log_fields)
+
+        text_fields = {"query", "error_message"}
+        for log in logs:
+            row = []
+            for field in log_fields:
+                value = getattr(log, field, "")
+                if field in text_fields and value:
+                    value = str(value).replace("\r", " ").replace("\n", " ")
+                if field == "timestamp" and value:
+                    value = value.strftime("%Y-%m-%d %H:%M:%S")
+                row.append(value)
+            writer.writerow(row)
+
+        return response
