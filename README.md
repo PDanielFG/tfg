@@ -1,20 +1,109 @@
-Para tener el software en funcionamiento hay que ejecutar los archivos de creacion de la base de datos y volcado de datos.
-###estructura.sql y volcado.sql
-Con el comando "mysql -u user -p database < archivo.sql"
+# Puesta en funcionamiento del software
 
-Esto es debido a que la persona que usa el software es porque desea analizar las esadísticas de los usuarios que han accedido a la misma.
+## Base de datos
 
-En caso de que se quiera cambiar la base de datos ir al archivo backend/core/settings.py en la sección databases, modificamos los datos de la base de datos.
+Para que el software funcione correctamente es necesario ejecutar los archivos de **creación de la base de datos** y **volcado de datos**:
 
-El proyecto se inicia al poner localhost:8080
-Hay dos opciones:
-1.- Descargar el repositorio en tu equipo, y usar el archivo llamado docker-compose.env (el nombre debe de ser modificado por docker-compose.yml) 
-frontend--> npm install, npm install -g @vue/cli, npm run serve
+* `estructura.sql`
+* `volcado.sql`
 
-backend --> ir a la carpeta donde descargamos el proyecto, con la cmd entrar a la carpeta tfg (donde esta frontend y backend) y hacer "python -m venv env"
-		activamos el ambiente en env/script/activate,
-		vamos a la carpeta de backend con cd backend
-		pip install -r requirements.txt
-		python manage-py runserver
+Ejecutar ambos archivos con el siguiente comando:
 
-2.- Descargar el archivo original docker-compose.yml, simplemente ejecutar docker-compose up 
+```bash
+mysql -u user -p database < archivo.sql
+```
+
+Este paso es necesario porque el software está diseñado para **analizar las estadísticas de los usuarios que han accedido a la aplicación**.
+
+---
+
+## Configuración de la base de datos
+
+Si se desea modificar la base de datos utilizada por el proyecto, hay que editar el archivo:
+
+```
+backend/core/settings.py
+```
+
+Dentro de la sección `DATABASES`, actualizar los datos de conexión correspondientes.
+
+---
+
+## Inicio del proyecto
+
+La aplicación estará disponible en:
+
+```
+http://localhost:8080
+```
+
+Existen **dos formas de ejecutar el proyecto**:
+
+---
+
+## Opción 1: Ejecución manual (sin Docker)
+
+### 1. Descargar el repositorio
+
+Clonar o descargar el repositorio en el equipo local.
+
+> Nota: El archivo `docker-compose.env` debe renombrarse a `docker-compose.yml` si se va a usar Docker.
+
+---
+
+### 2. Frontend
+
+```bash
+npm install
+npm install -g @vue/cli
+npm run serve
+```
+
+---
+
+### 3. Backend
+
+Desde la carpeta raíz del proyecto (donde están `frontend` y `backend`):
+
+```bash
+python -m venv env
+```
+
+Activar el entorno virtual:
+
+```bash
+env/Scripts/activate
+```
+
+Acceder al backend e instalar dependencias:
+
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+Ejecutar el servidor:
+
+```bash
+python manage.py runserver
+```
+
+---
+
+## Opción 2: Ejecución con Docker
+
+1. Descargar el archivo original `docker-compose.yml`
+2. Ejecutar el siguiente comando:
+
+```bash
+docker-compose up
+```
+
+---
+
+## Resumen
+
+* Ejecutar los scripts SQL antes de iniciar el proyecto
+* Configurar la base de datos en `settings.py` si es necesario
+* Acceder a la aplicación en `localhost:8080`
+* Ejecutar con Docker o manualmente según preferencia
