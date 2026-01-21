@@ -47,7 +47,7 @@ Existen **dos formas de ejecutar el proyecto**:
 
 Clonar o descargar el repositorio en el equipo local.
 
-> Nota: El archivo `docker-compose.env` debe renombrarse a `docker-compose.yml` si se va a usar Docker.
+> Nota: El archivo `docker-compose.env` debe renombrarse a `docker-compose.yml`.
 
 ---
 
