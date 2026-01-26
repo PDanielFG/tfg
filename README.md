@@ -17,6 +17,18 @@ Este paso es necesario porque el software está diseñado para **analizar las es
 
 ---
 
+## Logs de prueba
+
+Para **probar el proyecto** y validar el correcto funcionamiento del sistema de análisis, se proporciona un archivo de logs de ejemplo:
+
+* `general.log`
+
+Este archivo contiene **registros de prueba** que simulan accesos y actividad de usuarios en la aplicación. El software utiliza estos logs para generar estadísticas y métricas.
+
+Asegúrate de que el archivo `general.log` esté ubicado en la ruta configurada en el proyecto (o en la ruta por defecto definida en la aplicación) antes de iniciar el backend.
+
+---
+
 ## Configuración de la base de datos
 
 Si se desea modificar la base de datos utilizada por el proyecto, hay que editar el archivo:
@@ -104,6 +116,7 @@ docker-compose up
 ## Resumen
 
 * Ejecutar los scripts SQL antes de iniciar el proyecto
+* Utilizar el archivo `general.log` como **log de prueba** para validar el análisis de estadísticas
 * Configurar la base de datos en `settings.py` si es necesario
 * Acceder a la aplicación en `localhost:8080`
 * Ejecutar con Docker o manualmente según preferencia
