@@ -38,6 +38,7 @@ Asegúrate de que el archivo `general.log` esté ubicado en la ruta configurada 
 ```ini
 general_log = 1
 general_log_file = "ruta/a/general.log"
+```
 
 ---
 
@@ -51,6 +52,7 @@ general_log_file = "ruta/a/general.log"
 ```ini
 general_log = 1
 general_log_file = "C:/ruta/a/general.log"
+```
 
 ##### Linux
 
@@ -61,6 +63,7 @@ general_log_file = "C:/ruta/a/general.log"
 ```ini
 general_log = 1
 general_log_file = /var/log/mysql/general.log
+```
 
 ##### macOS
 
@@ -71,6 +74,7 @@ general_log_file = /var/log/mysql/general.log
 ```ini
 general_log = 1
 general_log_file = /usr/local/var/mysql/general.log
+```
 
 En todos los casos, reiniciar el servicio mysql.
 
