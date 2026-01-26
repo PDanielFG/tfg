@@ -27,6 +27,53 @@ Este archivo contiene **registros de prueba** que simulan accesos y actividad de
 
 Asegúrate de que el archivo `general.log` esté ubicado en la ruta configurada en el proyecto (o en la ruta por defecto definida en la aplicación) antes de iniciar el backend.
 
+### Activación de los logs generales (`general.log`)
+
+#### ✅ Con XAMPP (MySQL / MariaDB)
+
+1. Abrir el archivo `my.ini` (ubicación típica: `xampp/mysql/bin/my.ini`).
+2. Buscar la sección `[mysqld]`.
+3. Añadir o descomentar las siguientes líneas:
+
+```ini
+general_log = 1
+general_log_file = "ruta/a/general.log"
+
+---
+
+#### ✅ Sin XAMPP
+
+##### Windows
+
+1. Abrir el archivo de configuración de MySQL (`my.ini` o `my.cnf`).
+2. Añadir o descomentar:
+
+```ini
+general_log = 1
+general_log_file = "C:/ruta/a/general.log"
+
+##### Linux
+
+1. Abrir el archivo de configuración de MySQL (`my.cnf` o `my.ini`).  
+   - Normalmente se encuentra en `/etc/mysql/my.cnf` o `/etc/my.cnf`.
+2. Añadir o descomentar:
+
+```ini
+general_log = 1
+general_log_file = /var/log/mysql/general.log
+
+##### macOS
+
+1. Abrir el archivo de configuración de MySQL (`my.cnf` o `my.ini`).
+   - Normalmente se encuentra en `/usr/local/etc/my.cnf` o `/etc/my.cnf`.
+2. Añadir o descomentar:
+
+```ini
+general_log = 1
+general_log_file = /usr/local/var/mysql/general.log
+
+En todos los casos, reiniciar el servicio mysql.
+
 ---
 
 ## Configuración de la base de datos
