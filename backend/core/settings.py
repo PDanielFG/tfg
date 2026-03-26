@@ -101,6 +101,8 @@ DATABASES = {
         
         # -------
         
+        #Eso es para Docker. Se podría poner directamente en texto plano como arriba, en caso de que descargaramos
+        #el proyecto para modificar la bd por ejemplo
         'NAME': os.environ.get('MYSQL_DB'),
         'USER': os.environ.get('MYSQL_USER'),
         'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
