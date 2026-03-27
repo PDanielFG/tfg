@@ -110,11 +110,11 @@ Existen **dos formas de ejecutar el proyecto**:
 
 Clonar o descargar el repositorio en el equipo local.
 
-> Nota: El archivo `docker-compose.env` debe renombrarse a `docker-compose.yml`.
-
 ---
 
 ### 2. Frontend
+
+Desde la carpeta frontend ejecutamos los siguientes comandos:
 
 ```bash
 npm install
