@@ -12,6 +12,8 @@ services:
       MYSQL_DB: practica
       MYSQL_USER: test
       MYSQL_PASSWORD: test
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3
 
   # Frontend Vue.js
   frontend:
@@ -40,3 +42,5 @@ services:
 
 volumes:
   mysql_data:
+  sqlite_data:
+
