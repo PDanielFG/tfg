@@ -155,7 +155,7 @@ python manage.py runserver
 
 ## Opción 2: Ejecución con Docker
 
-1. Descargar el archivo original `docker-compose.yml`
+1. Clonar o descargar el repositorio en el equipo local.
 2. Ejecutar el siguiente comando:
 
 ```bash
