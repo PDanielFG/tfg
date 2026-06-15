@@ -17,7 +17,7 @@ services:
 
   # Frontend Vue.js
   frontend:
-    image: pdanielfg/tfg-frontend:latest
+    image: pdanielfg/tfg_frontend:latest
     container_name: vue_app
     ports:
       - "8080:80"
