@@ -29,8 +29,8 @@
                     <option value="week">Por semana</option>
                     <option value="month">Por mes</option>
                 </select>
-                <input type="date" v-model="fromDate" class="border px-2 py-1 rounded" />
-                <input type="date" v-model="toDate" class="border px-2 py-1 rounded" />
+                <!-- <input type="date" v-model="fromDate" class="border px-2 py-1 rounded" /> -->
+                <!-- <input type="date" v-model="toDate" class="border px-2 py-1 rounded" /> -->
             </div>
             <div class="h-[400px]">
                 <canvas ref="chartConnectionsRef" class="h-full w-full"></canvas>
